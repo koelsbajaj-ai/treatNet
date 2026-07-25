@@ -66,9 +66,14 @@ See `PLAN.md` section 1 for the full reasoning behind each rule.
 
 ## Current status
 
-**Stage 1 (Empty app live) — in progress.** Next.js app scaffolded
-(TypeScript, Tailwind, App Router), folder structure per PLAN.md created
-with placeholder READMEs, `.env.example` and `.gitignore` in place, homepage
-replaced with the smoke-test placeholder (title, subtitle, synthetic-data
-banner). Local dev server started; waiting on the user to confirm the page
-renders before git init / GitHub push / Vercel + Supabase wiring.
+**Stage 1 (Empty app live) — complete except Vercel.** Next.js app
+scaffolded (TypeScript, Tailwind, App Router), folder structure per
+PLAN.md created with placeholder READMEs, `.env.example` and
+`.gitignore` in place, homepage replaced with the smoke-test placeholder
+(title, subtitle, synthetic-data banner). User confirmed the local smoke
+test renders correctly. Repo initialized, committed, and pushed to
+https://github.com/koelsbajaj-ai/treatNet (public). Remaining before
+Stage 1 is fully done: user connects Vercel to this repo and adds
+Supabase env vars in the browser themselves; Stage 1's "DB: connected"
+health check isn't built yet either — that depends on Stage 2's schema
+existing first. Next up: Stage 2 (schema + seed data).
