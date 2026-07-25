@@ -6,7 +6,6 @@ import { ProvenanceModal } from "./ProvenanceModal";
 
 interface ResultsViewProps {
   result: MatchResult;
-  onStartOver: () => void;
 }
 
 function TierBadge({ tier }: { tier: ConfidenceTier }) {
@@ -27,7 +26,7 @@ function TierBadge({ tier }: { tier: ConfidenceTier }) {
   );
 }
 
-export function ResultsView({ result, onStartOver }: ResultsViewProps) {
+export function ResultsView({ result }: ResultsViewProps) {
   const [selectedRef, setSelectedRef] = useState<string | null>(null);
 
   return (
@@ -117,14 +116,6 @@ export function ResultsView({ result, onStartOver }: ResultsViewProps) {
           </div>
         </div>
       )}
-
-      <button
-        type="button"
-        onClick={onStartOver}
-        className="mt-6 rounded-md border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
-      >
-        Start over
-      </button>
 
       {selectedRef && (
         <ProvenanceModal

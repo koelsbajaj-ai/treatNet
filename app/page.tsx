@@ -17,7 +17,7 @@ const FALLBACK_TIMEOUT_MS = 3000;
 
 function withFallback<T>(promise: Promise<T>, fallback: T | null, timeoutMs: number): Promise<T> {
   if (!fallback) return promise;
-  return new Promise<T>((resolve, reject) => {
+  return new Promise<T>((resolve) => {
     let settled = false;
     const timer = setTimeout(() => {
       if (!settled) {
@@ -33,11 +33,15 @@ function withFallback<T>(promise: Promise<T>, fallback: T | null, timeoutMs: num
           resolve(value);
         }
       },
-      (err) => {
+      () => {
+        // Venue wifi can drop the connection outright, not just slow it
+        // down — an outright failure on a demo case falls back too, same
+        // as a timeout. Only reachable when fallback is non-null (checked
+        // above), so this never masks a real error on a manually typed note.
         if (!settled) {
           settled = true;
           clearTimeout(timer);
-          reject(err);
+          resolve(fallback);
         }
       }
     );
@@ -141,7 +145,15 @@ export default function Home() {
   }
 
   return (
-    <main className="flex flex-1 flex-col items-center px-6 py-12">
+    <main className="relative flex flex-1 flex-col items-center px-6 py-12">
+      <button
+        type="button"
+        onClick={handleStartOver}
+        className="fixed right-4 top-16 z-[70] rounded-full bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-lg hover:bg-red-700"
+      >
+        ↺ Reset
+      </button>
+
       <h1 className="text-4xl font-semibold tracking-tight text-black dark:text-zinc-50">
         TreatmentNet
       </h1>
@@ -172,9 +184,7 @@ export default function Home() {
             isMatching={isMatching}
           />
         )}
-        {stage === "results" && matchResult && (
-          <ResultsView result={matchResult} onStartOver={handleStartOver} />
-        )}
+        {stage === "results" && matchResult && <ResultsView result={matchResult} />}
       </div>
     </main>
   );

@@ -29,7 +29,7 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <div className="w-full bg-amber-100 dark:bg-amber-950 border-b border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-100 text-sm text-center py-2 px-4">
+        <div className="sticky top-0 z-[60] w-full bg-amber-100 dark:bg-amber-950 border-b border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-100 text-sm text-center py-2 px-4">
           All data is synthetic and illustrative. Not for clinical use.
         </div>
         {children}
