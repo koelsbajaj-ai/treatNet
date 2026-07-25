@@ -1,0 +1,16 @@
+# lib
+
+Deterministic domain logic shared by the API routes. Nothing in this
+folder ever calls the LLM.
+
+- `types.ts` — TypeScript types mirroring the Supabase schema 1:1
+  (Patient, Condition, Observation, AllergyIntolerance, Treatment,
+  TreatmentOutcome, ContraindicationRule). The single source of truth
+  the matching engine is written against.
+- `matching.ts` — cohort matching and severity-band stratification.
+  Same case + same DB state must always return the same cohort.
+- `gates.ts` — hard contraindication gating (allergy and lab-threshold
+  rules). Removes a treatment from the candidate set entirely, before
+  any ranking happens. This is the safety-critical file in the repo.
+- `supabase.ts` — server-side Supabase client (service-role key). Only
+  ever imported from API routes, never from client components.
