@@ -120,6 +120,57 @@ export interface ConfirmedCase {
   allergies: CaseAllergy[];
 }
 
+// ---- Stage 4: /api/extract output (draft, pre-confirmation) ----
+// The LLM's one job in this product: read unstructured prose and locate the
+// clinically relevant facts. Every field carries its own confidence — this
+// output is never trusted silently and never reaches /api/match directly;
+// the clinician confirms or edits it first.
+
+export type FieldConfidence = "high" | "medium" | "low";
+
+export interface ExtractedCondition {
+  codeSystem: string;
+  code: string;
+  display: string;
+  confidence: FieldConfidence;
+}
+
+export interface ExtractedSeverity {
+  codeSystem: string;
+  code: string;
+  valueText: string;
+  confidence: FieldConfidence;
+}
+
+export interface ExtractedAge {
+  value: number;
+  confidence: FieldConfidence;
+}
+
+export interface ExtractedObservation extends CaseObservation {
+  confidence: FieldConfidence;
+}
+
+export interface ExtractedAllergy extends CaseAllergy {
+  confidence: FieldConfidence;
+}
+
+/** Informational only — not consumed by /api/match, just shown to the clinician. */
+export interface ExtractedTreatmentHistoryItem {
+  display: string;
+  note: string;
+  confidence: FieldConfidence;
+}
+
+export interface ExtractedCase {
+  condition: ExtractedCondition;
+  severity: ExtractedSeverity;
+  age: ExtractedAge;
+  observations: ExtractedObservation[];
+  allergies: ExtractedAllergy[];
+  treatmentHistory: ExtractedTreatmentHistoryItem[];
+}
+
 // ---- /api/match response shape ----
 
 export type ConfidenceTier = "insufficient" | "low" | "moderate";

@@ -126,6 +126,53 @@ Two bugs found and fixed while testing, worth knowing about:
    was told and should regenerate both Supabase keys in the dashboard
    as hygiene once things are stable.
 
-Next up: Stage 4 (free-text case intake — `/api/extract`, confirmation
-form with confidence badges, bare-bones results readout). This is the
-strongest demo moment per PLAN.md and is protected ahead of Stage 6.
+**Stage 4 (Free-text case intake) — complete.** `app/api/extract`
+calls `claude-sonnet-4-6` (server-only client in `lib/anthropic.ts`,
+same `import "server-only"` treatment as Supabase) with a forced tool
+call (`tool_choice`) rather than `output_config.format`, since
+structured outputs aren't listed as supported on Sonnet 4.6. The
+system prompt constrains extraction to the exact vocabulary the seed
+data uses (3 condition codes, their severity codes/values, 4
+observation codes, 2 gate-relevant allergy codes) so free text reliably
+maps onto real cohorts instead of drifting into codes nothing matches.
+Every field carries `high`/`medium`/`low` confidence.
+
+UI: `components/IntakeForm.tsx` (textarea + 3 demo buttons),
+`ConfirmationForm.tsx` (editable fields, confidence badges, amber
+ring specifically on `low`-confidence fields — verified visually, not
+just in code), `ResultsView.tsx` (ranked/gated/insufficient states).
+`app/page.tsx` wires the state machine: intake → confirming → results.
+Nothing runs downstream until "Confirm and run" is clicked, per the
+non-negotiable rule.
+
+**Demo notes are placeholders** (`lib/demoCases.ts`, search
+"PLACEHOLDER") — written by Claude to unblock building and testing;
+swap in the teammate's real notes when ready, which also means
+regenerating the hand-written `fallbackExtraction`/`fallbackMatch` data
+alongside them.
+
+**Demo buttons never call the live model.** Per explicit instruction,
+clicking a demo button and then Extract uses `fallbackExtraction`
+directly with zero network calls — verified via the browser network
+tab. Only a manually pasted note hits live `/api/extract`. Each demo
+button shows a small "⚡ instant demo" badge so it reads as a deliberate
+wifi-safety feature at the booth, not a broken live call. The match
+step (`/api/match`) keeps its original behavior: live call raced
+against a 3-second timeout, falling back to the cached match result
+only if the demo path is still active and the real call is slow — this
+wasn't asked to change and isn't Anthropic-billing-dependent anyway.
+
+Tested end-to-end twice: once with `ANTHROPIC_API_KEY` at zero credit
+balance (confirmed clean error surfacing, and confirmed the confirm →
+match → results path works against the real Supabase-backed engine by
+temporarily hardcoding a test-only stage jump, reverted before
+committing — see git history, not present in shipped code), and once
+after the instant-demo change (confirmed via network tab: demo path
+fires zero `/api/` requests through extraction, manual paste fires a
+real one). Live extraction itself is still unverified — the API key
+had no credits both times; retest once credits land.
+
+Next up: Stage 5 (results UI polish — ranked table styling, confidence
+tier badges, red avoid flags, clickable citations wired to record IDs).
+Much of this was already built ahead of schedule in Stage 4 because the
+user asked for it directly; Stage 5 is mostly refinement, not a rebuild.
