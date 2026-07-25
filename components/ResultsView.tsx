@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import type { ExtractedTreatmentHistoryItem, MatchResult } from "@/lib/types";
 import { TierMeter } from "./ConfidenceMeter";
 import { ProvenanceModal, type ProvenanceCitation } from "./ProvenanceModal";
@@ -15,6 +16,8 @@ interface ResultsViewProps {
   result: MatchResult;
   /** From the confirmed case's extraction — informational only, never sent to /api/match. */
   treatmentHistory: ExtractedTreatmentHistoryItem[];
+  /** Condition code, for the "view full landscape" link — omitted has no link. */
+  conditionCode?: string;
 }
 
 // Purely a display heuristic — matches this row's treatment against the
@@ -44,12 +47,22 @@ function RankMarker({ n }: { n: number }) {
   );
 }
 
-export function ResultsView({ result, treatmentHistory }: ResultsViewProps) {
+export function ResultsView({ result, treatmentHistory, conditionCode }: ResultsViewProps) {
   const [selectedCitation, setSelectedCitation] = useState<ProvenanceCitation | null>(null);
 
   return (
     <div className="w-full">
-      <h2 className="text-xs font-medium uppercase tracking-[0.14em] text-faint">Results</h2>
+      <div className="flex items-start justify-between gap-4">
+        <h2 className="text-xs font-medium uppercase tracking-[0.14em] text-faint">Results</h2>
+        {conditionCode && (
+          <Link
+            href={`/landscape?condition=${encodeURIComponent(conditionCode)}`}
+            className="text-xs text-accent underline decoration-dotted underline-offset-2 transition-colors duration-150 hover:text-accent-hover"
+          >
+            View full treatment landscape →
+          </Link>
+        )}
+      </div>
       <p className="mt-2 text-sm text-muted">
         Matched on condition <span className="font-mono tnum">{result.matchedOn.conditionCode}</span>
         , severity <span className="font-mono tnum">{result.matchedOn.severityCode}</span> = &ldquo;

@@ -49,6 +49,12 @@ Every number on a results screen is a citation, not an assertion:
 - Each gated ("avoid") treatment links to the specific contraindication rule that fired.
 - "Cohort size" itself opens the full, independently re-derived list of matched patient records — including for the refusal state, where no ranking is shown at all.
 
+### Treatment landscape
+
+A second, deliberately looser view (`/landscape`, `/api/landscape`) shows every treatment ever recorded for a condition across the whole database — not the tight, severity- and age-matched cohort a single confirmed case gets from `/api/match`. It's an overview for browsing, not a recommendation: columns are treatment name, cohort size, response rate (a bar whose length is the rate and whose weight reflects cohort size), and adverse event rate. Rows below the N=5 threshold are dimmed and excluded from ranking, with a footnote saying so. This route has its own aggregation logic, deliberately duplicated (not shared) from `lib/matching.ts`'s private outcome classification, so this read-only overview surface can never change, or be changed by, the safety-critical per-case matching path — it only imports the shared `MIN_COHORT_N` constant, since that threshold is a fixed product rule, not matching logic.
+
+**No cost/price column — omitted deliberately, not overlooked.** There is no cost or price field anywhere in this schema or its seed data. Adding one would mean fabricating a number, which is exactly the kind of unbacked claim this product exists to avoid (see "Provenance, everywhere" above). If cost is added later, it should come from a cited external reference — e.g. published NHS/BNF list prices — not be derived from patient records, and should render visually distinct from the cohort-derived columns so a clinician never mistakes a reference price for something this dataset actually measured. The table layout already reserves a column for this.
+
 ## Non-goals
 
 Explicitly out of scope for this build: real EHR integration, Synthea-generated data, authentication/multi-tenancy, HIPAA/GDPR compliance, vector databases, model fine-tuning, and any narrative/summary layer beyond the raw ranked numbers. This is a demo of a deterministic matching engine with LLM-assisted intake — not a product.

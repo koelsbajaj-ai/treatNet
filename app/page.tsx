@@ -204,7 +204,11 @@ function HomeContent() {
         <InsufficientExtractionView reason={insufficientReason} />
       )}
       {stage === "results" && matchResult && (
-        <ResultsView result={matchResult} treatmentHistory={extracted?.treatmentHistory ?? []} />
+        <ResultsView
+          result={matchResult}
+          treatmentHistory={extracted?.treatmentHistory ?? []}
+          conditionCode={matchResult.matchedOn.conditionCode}
+        />
       )}
     </AppShell>
   );
