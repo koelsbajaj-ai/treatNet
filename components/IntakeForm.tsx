@@ -23,7 +23,7 @@ export function IntakeForm({
         Paste a clinical note
       </h2>
       <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-        Or load a demo note below — three placeholder notes, one per domain.
+        Or load a demo note below — one per domain, plus a deliberately sparse case.
       </p>
 
       <div className="mt-4 flex flex-wrap gap-3">

@@ -162,7 +162,9 @@ export interface ExtractedTreatmentHistoryItem {
   confidence: FieldConfidence;
 }
 
-export interface ExtractedCase {
+/** The normal case: enough was extracted to build a confirmable case. */
+export interface SufficientExtraction {
+  sufficientInformation: true;
   condition: ExtractedCondition;
   severity: ExtractedSeverity;
   age: ExtractedAge;
@@ -170,6 +172,20 @@ export interface ExtractedCase {
   allergies: ExtractedAllergy[];
   treatmentHistory: ExtractedTreatmentHistoryItem[];
 }
+
+/**
+ * A second, distinct refusal path from the engine's insufficient-cohort-data
+ * refusal (lib/matching.ts). This one fires before /api/match is ever
+ * called: the note itself didn't contain enough to identify one of the
+ * three known conditions or extract meaningful clinical detail at all.
+ * There's no case to confirm and nothing to match against.
+ */
+export interface InsufficientExtraction {
+  sufficientInformation: false;
+  insufficientReason: string;
+}
+
+export type ExtractedCase = SufficientExtraction | InsufficientExtraction;
 
 // ---- /api/match response shape ----
 

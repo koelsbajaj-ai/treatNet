@@ -224,6 +224,50 @@ demo run 20+ times on unreliable wifi:
   the three demo notes are still placeholders — the cheat sheet's exact
   numbers will need re-verifying once the real notes land.
 
+**Real demo notes swapped in (post-Stage-9) — complete.** The
+teammate's 4 real notes (oncology, diabetes, heart failure, plus a
+sparse case) replaced the PLACEHOLDER ones in `lib/demoCases.ts`. Two
+things this surfaced, both fixed:
+
+- **Two of the new notes' stated ages didn't match any age band in the
+  existing seed data** (oncology stage IV said 58, seed had that
+  cohort at 70-79; heart failure reduced-EF said 81, seed had it at
+  60-69). Fixed by regenerating those two cohorts' ages via the
+  (uncommitted, scratchpad-only) seed generator script to match the
+  real note text — never the reverse. `seed/002_seed_oncology.sql` and
+  `seed/004_seed_heart_failure.sql` reflect this; reloaded into
+  Supabase and reverified via live `/api/match` calls before writing
+  any fallback data.
+- **The sparse note doesn't fit any of the three known conditions at
+  all**, which the original schema had no way to express honestly (it
+  forced a pick from an enum of 3). Added a second, structurally
+  distinct refusal path: `ExtractedCase` is now a discriminated union
+  (`SufficientExtraction | InsufficientExtraction` in `lib/types.ts`),
+  the extraction tool schema and system prompt gained a
+  `sufficientInformation` flag, and a new stage
+  (`components/InsufficientExtractionView.tsx`) shows "Cannot process
+  this note" — before `/api/match` is ever called, distinct from the
+  insufficient-*cohort*-data refusal that fires after a match attempt.
+  Both paths verified firing correctly in-browser.
+
+Also added, per explicit user request after reviewing the diabetes
+case: a **"Patient currently on this" badge** plus a short adherence-
+context line on `ResultsView` when a ranked treatment's name exact-
+matches (case-insensitive) something in the confirmed case's treatment
+history. This is purely a `ResultsView`-layer display match — zero
+changes to `ConfirmedCase`, `/api/match`, or `lib/matching.ts`. The
+alternative (having the engine itself down-weight or exclude a
+treatment the patient is already failing) was considered and
+explicitly rejected as too risky this late: it would touch the
+safety-critical deterministic core, has no clean answer for "how much
+to down-weight," and arguably conflicts with the product's own
+"it ranks, it never prescribes" framing. Worth revisiting post-hackathon
+as a real design question, not a quick fix.
+
+`DEMO.md` fully rewritten to match: exact numbers for all 4 cases,
+confidence-color table per field, a table explaining the two distinct
+refusal paths side by side, and a troubleshooting section.
+
 Next up per PLAN.md: Stage 6 (narrative layer, explicitly cuttable —
 lowest priority), Stage 7 (credibility UI — the persistent banner and
 insufficient-data refusal state are both already built; what's likely

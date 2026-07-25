@@ -5,12 +5,12 @@ import type {
   CaseAllergy,
   CaseObservation,
   ConfirmedCase,
-  ExtractedCase,
   FieldConfidence,
+  SufficientExtraction,
 } from "@/lib/types";
 
 interface ConfirmationFormProps {
-  extracted: ExtractedCase;
+  extracted: SufficientExtraction;
   onConfirm: (confirmed: ConfirmedCase) => void;
   isMatching: boolean;
 }

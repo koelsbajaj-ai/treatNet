@@ -1,7 +1,15 @@
 import { NextResponse } from "next/server";
 import type Anthropic from "@anthropic-ai/sdk";
 import { anthropic } from "@/lib/anthropic";
-import type { ExtractedCase } from "@/lib/types";
+import type {
+  ExtractedAge,
+  ExtractedAllergy,
+  ExtractedCase,
+  ExtractedCondition,
+  ExtractedObservation,
+  ExtractedSeverity,
+  ExtractedTreatmentHistoryItem,
+} from "@/lib/types";
 
 const MODEL = "claude-sonnet-4-6";
 
@@ -16,6 +24,9 @@ const SYSTEM_PROMPT = `You extract structured clinical fields from a single free
 - Every field gets its own confidence: "high" (explicitly and unambiguously stated), "medium" (stated but with some ambiguity, e.g. an abbreviation or indirect phrasing), or "low" (inferred, uncertain, or only weakly implied).
 - If the note doesn't mention something at all, omit it (empty array for observations/allergies/treatmentHistory) rather than guessing.
 - Do not let a low-confidence guess replace an honest "I'm not sure" — mark it low confidence instead of upgrading your certainty to make the output look cleaner.
+- A stated fact you'd need to estimate to fill a required field (e.g. age isn't given but the note's context makes a rough estimate reasonable) may still be extracted, but ALWAYS at "low" confidence, never higher — the clinician must be the one to confirm or correct it.
+
+First, decide whether this note contains enough to work with at all. Set sufficientInformation to false ONLY when the note does not clearly describe one of the three known conditions below, or is so sparse/vague that no meaningful clinical detail can be extracted (no identifiable diagnosis, and nothing else usable either). When false, give a one-sentence insufficientReason explaining what's missing, and you may leave condition/severity/age as placeholders — they will not be used or shown. When true, proceed with full extraction as normal and leave insufficientReason empty. This is a real, separate refusal path from the downstream cohort-matching engine's own "insufficient data" refusal — don't set it false just because a case looks like it might produce a small cohort; that determination belongs to the matching engine, not you. Only set it false when there is nothing here to even build a case from.
 
 Known conditions (pick exactly one — this note must be about one of these three):
 - SNOMED 254837009 "Malignant neoplasm of breast" — severity code "stage", valueText one of: "II", "III", "IV"
@@ -60,6 +71,15 @@ const EXTRACTION_TOOL: Anthropic.Tool = {
   input_schema: {
     type: "object",
     properties: {
+      sufficientInformation: {
+        type: "boolean",
+        description:
+          "False only when the note doesn't describe one of the three known conditions or has no usable clinical detail at all.",
+      },
+      insufficientReason: {
+        type: "string",
+        description: "One sentence explaining what's missing. Only meaningful when sufficientInformation is false.",
+      },
       condition: {
         type: "object",
         properties: {
@@ -130,7 +150,15 @@ const EXTRACTION_TOOL: Anthropic.Tool = {
         },
       },
     },
-    required: ["condition", "severity", "age", "observations", "allergies", "treatmentHistory"],
+    required: [
+      "sufficientInformation",
+      "condition",
+      "severity",
+      "age",
+      "observations",
+      "allergies",
+      "treatmentHistory",
+    ],
   },
 };
 
@@ -173,6 +201,33 @@ export async function POST(request: Request) {
     );
   }
 
-  const extracted = toolUse.input as ExtractedCase;
+  const raw = toolUse.input as {
+    sufficientInformation: boolean;
+    insufficientReason?: string;
+    condition: ExtractedCondition;
+    severity: ExtractedSeverity;
+    age: ExtractedAge;
+    observations: ExtractedObservation[];
+    allergies: ExtractedAllergy[];
+    treatmentHistory: ExtractedTreatmentHistoryItem[];
+  };
+
+  const extracted: ExtractedCase = raw.sufficientInformation
+    ? {
+        sufficientInformation: true,
+        condition: raw.condition,
+        severity: raw.severity,
+        age: raw.age,
+        observations: raw.observations,
+        allergies: raw.allergies,
+        treatmentHistory: raw.treatmentHistory,
+      }
+    : {
+        sufficientInformation: false,
+        insufficientReason:
+          raw.insufficientReason ||
+          "Not enough clinical detail was found in this note to identify a condition or extract structured fields.",
+      };
+
   return NextResponse.json(extracted);
 }

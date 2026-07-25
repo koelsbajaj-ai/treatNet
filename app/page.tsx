@@ -4,10 +4,11 @@ import { useState } from "react";
 import { IntakeForm } from "@/components/IntakeForm";
 import { ConfirmationForm } from "@/components/ConfirmationForm";
 import { ResultsView } from "@/components/ResultsView";
+import { InsufficientExtractionView } from "@/components/InsufficientExtractionView";
 import type { DemoCase } from "@/lib/demoCases";
-import type { ConfirmedCase, ExtractedCase, MatchResult } from "@/lib/types";
+import type { ConfirmedCase, ExtractedCase, MatchResult, SufficientExtraction } from "@/lib/types";
 
-type Stage = "intake" | "confirming" | "results";
+type Stage = "intake" | "confirming" | "insufficientExtraction" | "results";
 
 // If a demo note is active and the live call takes longer than this, fall
 // back to the pre-computed cached result instantly rather than let venue
@@ -55,7 +56,8 @@ export default function Home() {
   const [isExtracting, setIsExtracting] = useState(false);
   const [isMatching, setIsMatching] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [extracted, setExtracted] = useState<ExtractedCase | null>(null);
+  const [extracted, setExtracted] = useState<SufficientExtraction | null>(null);
+  const [insufficientReason, setInsufficientReason] = useState<string | null>(null);
   const [matchResult, setMatchResult] = useState<MatchResult | null>(null);
 
   function handleLoadDemo(demo: DemoCase) {
@@ -72,6 +74,19 @@ export default function Home() {
     }
   }
 
+  function applyExtractionResult(result: ExtractedCase) {
+    if (result.sufficientInformation) {
+      setExtracted(result);
+      setStage("confirming");
+    } else {
+      // Distinct from the matching engine's insufficient-cohort-data refusal
+      // (ResultsView) — this fires before /api/match is ever called, because
+      // there wasn't enough here to build a case from in the first place.
+      setInsufficientReason(result.insufficientReason);
+      setStage("insufficientExtraction");
+    }
+  }
+
   async function handleExtract() {
     setErrorMessage(null);
 
@@ -80,8 +95,7 @@ export default function Home() {
     // text away from the exact demo string already clears activeDemo (see
     // handleNoteTextChange), so this only fires for the unmodified demo.
     if (activeDemo) {
-      setExtracted(activeDemo.fallbackExtraction);
-      setStage("confirming");
+      applyExtractionResult(activeDemo.fallbackExtraction);
       return;
     }
 
@@ -97,8 +111,7 @@ export default function Home() {
         throw new Error(body.error ?? `Extraction failed (${res.status})`);
       }
       const result = (await res.json()) as ExtractedCase;
-      setExtracted(result);
-      setStage("confirming");
+      applyExtractionResult(result);
     } catch (err) {
       setErrorMessage(err instanceof Error ? err.message : "Extraction failed.");
     } finally {
@@ -110,7 +123,7 @@ export default function Home() {
     setIsMatching(true);
     setErrorMessage(null);
     try {
-      const fallback = activeDemo ? activeDemo.fallbackMatch : null;
+      const fallback = activeDemo?.fallbackMatch ?? null;
       const result = await withFallback(
         fetch("/api/match", {
           method: "POST",
@@ -140,6 +153,7 @@ export default function Home() {
     setNoteText("");
     setActiveDemo(null);
     setExtracted(null);
+    setInsufficientReason(null);
     setMatchResult(null);
     setErrorMessage(null);
   }
@@ -184,7 +198,12 @@ export default function Home() {
             isMatching={isMatching}
           />
         )}
-        {stage === "results" && matchResult && <ResultsView result={matchResult} />}
+        {stage === "insufficientExtraction" && insufficientReason && (
+          <InsufficientExtractionView reason={insufficientReason} />
+        )}
+        {stage === "results" && matchResult && (
+          <ResultsView result={matchResult} treatmentHistory={extracted?.treatmentHistory ?? []} />
+        )}
       </div>
     </main>
   );

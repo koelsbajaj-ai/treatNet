@@ -1,11 +1,32 @@
 "use client";
 
 import { useState } from "react";
-import type { ConfidenceTier, MatchResult } from "@/lib/types";
+import type { ConfidenceTier, ExtractedTreatmentHistoryItem, MatchResult } from "@/lib/types";
 import { ProvenanceModal } from "./ProvenanceModal";
 
 interface ResultsViewProps {
   result: MatchResult;
+  /** From the confirmed case's extraction — informational only, never sent to /api/match. */
+  treatmentHistory: ExtractedTreatmentHistoryItem[];
+}
+
+// Purely a display heuristic — matches this row's treatment against the
+// confirmed case's own treatment history by exact display name (case-
+// insensitive). A miss just means no badge; it never changes a number or
+// a rank, so a false negative here carries no safety risk.
+function findHistoryMatch(
+  treatmentDisplay: string,
+  history: ExtractedTreatmentHistoryItem[]
+): ExtractedTreatmentHistoryItem | undefined {
+  const normalized = treatmentDisplay.trim().toLowerCase();
+  return history.find((item) => item.display.trim().toLowerCase() === normalized);
+}
+
+const ADHERENCE_KEYWORDS = ["adher", "missed appointment", "compliance", "compliant", "poor adherence"];
+
+function isAdherenceRelated(note: string): boolean {
+  const lower = note.toLowerCase();
+  return ADHERENCE_KEYWORDS.some((keyword) => lower.includes(keyword));
 }
 
 function TierBadge({ tier }: { tier: ConfidenceTier }) {
@@ -26,7 +47,7 @@ function TierBadge({ tier }: { tier: ConfidenceTier }) {
   );
 }
 
-export function ResultsView({ result }: ResultsViewProps) {
+export function ResultsView({ result, treatmentHistory }: ResultsViewProps) {
   const [selectedRef, setSelectedRef] = useState<string | null>(null);
 
   return (
@@ -61,37 +82,52 @@ export function ResultsView({ result }: ResultsViewProps) {
             Ranked treatments
           </h3>
           <div className="mt-2 space-y-2">
-            {result.ranked.map((row, rank) => (
-              <div
-                key={row.treatmentCode}
-                className="rounded-md border border-zinc-200 p-3 dark:border-zinc-800"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="font-medium text-zinc-900 dark:text-zinc-100">
-                    #{rank + 1} {row.treatmentDisplay}
-                  </span>
-                  <TierBadge tier={row.confidenceTier} />
+            {result.ranked.map((row, rank) => {
+              const historyMatch = findHistoryMatch(row.treatmentDisplay, treatmentHistory);
+              return (
+                <div
+                  key={row.treatmentCode}
+                  className="rounded-md border border-zinc-200 p-3 dark:border-zinc-800"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-2 font-medium text-zinc-900 dark:text-zinc-100">
+                      #{rank + 1} {row.treatmentDisplay}
+                      {historyMatch && (
+                        <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-800 dark:bg-blue-950 dark:text-blue-300">
+                          Patient currently on this
+                        </span>
+                      )}
+                    </span>
+                    <TierBadge tier={row.confidenceTier} />
+                  </div>
+                  <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+                    N={row.n} · {(row.successRate * 100).toFixed(0)}% improved ({row.successCount}/
+                    {row.n}) · {row.adverseEventCount} adverse event
+                    {row.adverseEventCount === 1 ? "" : "s"}
+                  </p>
+                  {historyMatch && isAdherenceRelated(historyMatch.note) && (
+                    <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-500">
+                      This cohort&apos;s outcomes reflect a range of adherence levels, not drug
+                      efficacy alone — re-trial with adherence support is a legitimate clinical
+                      option.
+                    </p>
+                  )}
+                  <div className="mt-2 flex flex-wrap items-center gap-1">
+                    <span className="text-xs text-zinc-500 dark:text-zinc-500">Patients:</span>
+                    {row.patientRefs.map((ref) => (
+                      <button
+                        key={ref}
+                        type="button"
+                        onClick={() => setSelectedRef(ref)}
+                        className="rounded border border-zinc-300 bg-zinc-50 px-1.5 py-0.5 text-xs font-medium text-zinc-700 hover:border-blue-500 hover:bg-blue-50 hover:text-blue-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:border-blue-400 dark:hover:bg-blue-950 dark:hover:text-blue-300"
+                      >
+                        {ref}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-                  N={row.n} · {(row.successRate * 100).toFixed(0)}% improved ({row.successCount}/
-                  {row.n}) · {row.adverseEventCount} adverse event
-                  {row.adverseEventCount === 1 ? "" : "s"}
-                </p>
-                <div className="mt-2 flex flex-wrap items-center gap-1">
-                  <span className="text-xs text-zinc-500 dark:text-zinc-500">Patients:</span>
-                  {row.patientRefs.map((ref) => (
-                    <button
-                      key={ref}
-                      type="button"
-                      onClick={() => setSelectedRef(ref)}
-                      className="rounded border border-zinc-300 bg-zinc-50 px-1.5 py-0.5 text-xs font-medium text-zinc-700 hover:border-blue-500 hover:bg-blue-50 hover:text-blue-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:border-blue-400 dark:hover:bg-blue-950 dark:hover:text-blue-300"
-                    >
-                      {ref}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}

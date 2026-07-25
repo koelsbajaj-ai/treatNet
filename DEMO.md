@@ -1,61 +1,115 @@
 # TreatmentNet — Demo Cheat Sheet
 
-One page. Read this before the booth opens, and glance at it between judges if you lose your place. The three demo buttons are all you need — never type a note live at the booth.
+One page. Read this before the booth opens, and glance at it between judges if you lose your place. Four demo buttons, one per real note. Never type a note live at the booth.
 
 ## Before the booth opens
 
-1. Open the live URL. You should see: an amber banner across the very top reading **"All data is synthetic and illustrative. Not for clinical use."**, the title **TreatmentNet**, the subtitle **"Evidence surfaced for clinician review, not a prescription."**, and a red **↺ Reset** button in the top-right corner.
-2. Click each of the three demo buttons once, run each all the way through to results, and hit Reset after each. This confirms everything is warm and working before a judge is watching.
+1. Open the live URL. You should see: an amber banner across the very top reading **"All data is synthetic and illustrative. Not for clinical use."**, the title **TreatmentNet**, the subtitle **"Evidence surfaced for clinician review, not a prescription."**, and a red **↺ Reset** button in the top-right corner. All four stay visible through every screen, including with the provenance modal open — that's been verified, not assumed.
+2. Click each of the four demo buttons once, run each all the way to its final screen, and hit Reset after each. This confirms everything is warm before a judge is watching.
 3. Between every judge: click **↺ Reset** (top-right, always visible, works from any screen including with a modal open). That's the only reset you need — it instantly clears back to a blank intake screen.
 
 ---
 
-## The 90-second walkthrough
+## The four demo notes
 
-### 1. Breast Cancer — ranked result + a gate firing (0:00–0:30)
+Each button loads a real messy clinical note (not typed live) and is marked with a small **⚡ INSTANT DEMO** badge — that's intentional: these four never call the live model for extraction, so venue wifi and Anthropic's API status can't touch them. The match step still calls the real database, with a 3-second automatic fallback to a cached result if that call is ever slow or fails outright.
 
-- Click **"Load example: Breast Cancer"** (has a small **⚡ INSTANT DEMO** badge — that's intentional, it's pre-computed so venue wifi can't stall it).
-- The messy note text fills the box. Click **Extract**.
-- **What you should see:** the confirmation screen appears *instantly*. Condition "Malignant neoplasm of breast", Severity (stage) "II", Age 55, two observations (HER2 receptor status: positive, LV ejection fraction: 42), one treatment history line about Trastuzumab. Every field has a green **high** confidence badge — say out loud that an amber-flagged field would mean the model wasn't sure, and nothing runs until you click confirm regardless.
-- Click **Confirm and run**.
-- **What you should see:** cohort size 25. Ranked treatments: **#1 Paclitaxel**, N=9, 56% improved, low confidence badge. Below that, in red: **Avoid — Trastuzumab, "Contraindicated with reduced ejection fraction (cardiotoxicity risk)"**.
-- Click any patient chip under "Patients:" (e.g. **ONC-017**) — a modal opens showing that exact synthetic patient's real record (condition, observations, the treatment they got, the outcome). Close it (✕ or click outside).
+### 1. Breast Cancer — the "insufficient data" refusal, by cohort size
 
-### 2. Heart Failure — same engine, second domain, different gate type (0:30–0:55)
+Click **"Load example: Breast Cancer"** → **Extract**.
 
-- Click **↺ Reset**, then **"Load example: Heart Failure"**, then **Extract**.
-- **What you should see:** Condition "Heart failure", Severity (ef_band) "reduced", Age 65, one observation (LV ejection fraction: 28), one allergy — **"Allergy: Sulfonamides (drug class)"** flagged **amber** with a **medium** badge (this is the one deliberately-imperfect field — point it out: the model wasn't fully certain, so it's flagged for you to check, not silently trusted).
-- Click **Confirm and run**.
-- **What you should see:** cohort size 26. **#1 Sacubitril-valsartan**, N=8, 75% improved. Avoid: **Furosemide, "Cross-reactive allergy risk with sulfonamide-derived diuretics"**. Same engine, same UI, zero code differences from the oncology run — that's the schema-agnostic breadth claim, live.
+**Confirmation screen, exactly:**
+| Field | Value | Confidence |
+|---|---|---|
+| Condition | Malignant neoplasm of breast | 🟢 high |
+| Severity (stage) | IV | 🟢 high |
+| Age | 58 | 🟢 high |
+| Observation: HER2 receptor status | positive | 🟢 high |
+| Treatment history | Trastuzumab — no response after ~4 months; discontinued after imaging showed disease progression | 🟢 high |
 
-### 3. Type 2 Diabetes — the refusal state (0:55–1:20)
+Every field is green here — say out loud that an amber field would mean the model wasn't sure, and nothing runs until Confirm regardless of color.
 
-- Click **↺ Reset**, then **"Load example: Type 2 Diabetes"**, then **Extract**.
-- **What you should see:** Condition "Type 2 diabetes mellitus", Severity (a1c_band) "severe", Age 65, two observations (Hemoglobin A1c: 10.1, eGFR: 22).
-- Click **Confirm and run**.
-- **What you should see:** cohort size 10, but instead of a ranked list: a gray box that says **"Insufficient data — no recommendation."** Below it, still in red: **Avoid — Metformin, "Contraindicated in severe renal impairment (eGFR < 30)"**. Say out loud: the engine refuses to rank when the sample is too small (N<5) rather than bluff a confident-looking answer — and it still tells you about the gate even when it won't rank.
+Click **Confirm and run**.
 
-### 4. Close (1:20–1:30)
+**Results screen, exactly:** "Matched on: condition 254837009, severity stage = "IV", age band 50-59. Cohort size: 3." Then a gray box: **"Insufficient data — no recommendation."** No ranked list, no avoid list. This is the smallest cohort in the whole dataset by design — three synthetic patients, below the N=5 floor.
 
-- Point at the amber banner (still visible, hasn't moved) and the subtitle. One line: *"Every screen says the same thing — this is evidence for a clinician to weigh, not a prescription."* Gesture at the public GitHub repo if it's on screen.
+### 2. Heart Failure — a real ranked result, second domain
+
+Click **↺ Reset** → **"Load example: Heart Failure"** → **Extract**.
+
+**Confirmation screen, exactly:**
+| Field | Value | Confidence |
+|---|---|---|
+| Condition | Heart failure | 🟢 high |
+| Severity (ef_band) | reduced | 🟢 high |
+| Age | 81 | 🟢 high |
+| Observation: LV ejection fraction | 30% | ⚪ **medium** |
+| Treatment history | Lisinopril — discontinued due to cough and a creatinine increase; switched to another agent, not clearly documented which | ⚪ medium |
+
+The LVEF field is gray/medium, not green — the note says "EF ~30% on last echo, maybe 2yrs ago, due for repeat," i.e. an approximate, possibly-stale number. That's a good one to point out: the model is calibrating confidence to how the note actually reads, not just presence-of-a-number.
+
+Click **Confirm and run**.
+
+**Results screen, exactly:** "Cohort size: 26," age band 80+. Ranked: **#1 Furosemide**, N=18, 78% improved (14/18), 1 adverse event, 🟢 moderate confidence. **#2 Sacubitril-valsartan**, N=8, 75% improved (6/8), 1 adverse event, 🟡 low confidence. No badge on either row (the patient's history is Lisinopril, which isn't either ranked drug — correct, no false match). No avoid list — nothing gates here.
+
+### 3. Type 2 Diabetes — a ranked result with an honest "already tried" flag
+
+Click **↺ Reset** → **"Load example: Type 2 Diabetes"** → **Extract**.
+
+**Confirmation screen, exactly:**
+| Field | Value | Confidence |
+|---|---|---|
+| Condition | Type 2 diabetes mellitus | 🟢 high |
+| Severity (a1c_band) | severe | 🟢 high |
+| Age | 64 | 🟠 **low (amber)** |
+| Observation: Hemoglobin A1c | 9.8% | 🟢 high |
+| Observation: eGFR (CKD-EPI) | "borderline (no numeric value documented)" | 🟠 **low (amber)** |
+| Treatment history | Metformin — HbA1c rising (8.4 to 9.8) despite metformin; poor adherence and missed appointments reported | 🟢 high |
+
+Two fields are amber here, and both are honest, not sloppy: **age is never stated in this note at all** — 64 is an estimate from context, correctly marked low-confidence for the clinician to check or correct. **eGFR has no number in the note** ("eGFR borderline") — the model didn't invent one; it recorded the ambiguity as text instead of a fabricated value. Good talking point if a judge asks about hallucination risk.
+
+Click **Confirm and run**.
+
+**Results screen, exactly:** "Cohort size: 10," age band 60-69. Ranked: **#1 Metformin** — with a blue **"Patient currently on this"** badge next to the name — N=6, 50% improved (3/6), 1 adverse event, 🟡 low confidence. Directly under the stats line, a short gray note: *"This cohort's outcomes reflect a range of adherence levels, not drug efficacy alone — re-trial with adherence support is a legitimate clinical option."* **#2 Insulin glargine**, N=4, 50% improved (2/4), 1 adverse event, gray **"Insufficient data"** tier badge (shown transparently even though it's below the ranking floor, since Metformin's N=6 already clears it for the cohort as a whole).
+
+The badge and the adherence line only appear because the treatment history text matches "Metformin" exactly and mentions adherence — this is a client-side display match, not a change to the ranking or the underlying numbers. Worth saying explicitly if asked: **the tool doesn't hide or downrank Metformin for the fact that this patient is already on it and not improving — it surfaces that fact next to the number, and leaves the judgment call to the clinician.**
+
+### 4. Sparse case — the *other* refusal, before a match is ever attempted
+
+Click **↺ Reset** → **"Load example: Sparse case"** → **Extract**.
+
+**What you should see immediately (no confirmation screen at all):** a screen titled **"Cannot process this note"**, with an amber box: *"Too little clinical detail to extract a case."* Reason shown: *"No diagnosis, condition, age, or clinically meaningful detail could be identified — the encounter was too brief and no prior records were available."* Below that, explicit text distinguishing this from the other refusal: this fires **before** any match is attempted, because there was nothing to build a case from — not because a cohort turned out to be small.
+
+This is the second, structurally distinct refusal path. If a judge asks "what happens with bad input," this is the answer: the system won't force a guess at a condition just to have something to show.
+
+---
+
+## The two distinct refusal paths — what triggers each
+
+| | Insufficient extraction (case 4) | Insufficient cohort data (case 1) |
+|---|---|---|
+| **Where it happens** | At Extract, before any confirmation screen | At Confirm and run, after a real match attempt |
+| **What triggers it** | The note doesn't describe one of the three known conditions, or has no usable clinical detail at all | The matched cohort's best-available treatment has fewer than 5 historical patients |
+| **What it means** | "There's nothing here to build a case from" | "We tried the match; the data we have is too thin to rank confidently" |
+| **Screen shown** | "Cannot process this note" (amber box, no cohort numbers) | "Insufficient data — no recommendation" (gray box, shows cohort size) |
+
+Both are real refusals the engine can hit live, not scripted-only — worth stating if a judge pushes on it.
 
 ---
 
 ## If something looks wrong
 
 - **Screen looks stuck or wrong** → click **↺ Reset**, top-right, always there. Don't reload the page (state is easier to reason about than a fresh load mid-conversation with a judge).
-- **A live extraction/match seems slow** → the three demo buttons never wait on anything live for extraction, and the match step automatically falls back to a cached result within 3 seconds if the network stalls or drops — verified under both a simulated 5-second delay and a simulated outright failure. You should never actually see a stall on the three demo buttons.
-- **Someone pastes their own note instead of using a button** → that's the one path that does call the live model, so it depends on wifi and Anthropic's API being up. If it errors, an error message appears in a red banner — hit Reset and go back to the three demo buttons.
-- **Don't manually retype or edit the demo note text** — editing it breaks the pairing with the pre-computed fallback for that run (still works, just no longer wifi-proof for that one attempt).
+- **A live match seems slow** → the four demo buttons never wait on anything live for extraction, and the match step automatically falls back to a cached result within 3 seconds if the network stalls or drops outright — verified under both a simulated 5-second delay and a simulated hard failure. You should never actually see a stall on the four demo buttons.
+- **Someone pastes their own note instead of using a button** → that's the one path that calls the live model for extraction, so it depends on wifi and Anthropic's API being up. If it errors, a red banner shows the error message — hit Reset and go back to the four demo buttons.
+- **Don't manually retype or edit a demo note's text** — editing it breaks the pairing with its pre-computed fallback for that run (extraction will then try to call the live model instead of using the cached result).
+- **A confidence badge or number doesn't match this sheet** → the underlying notes or seed data may have changed since this was written. Trust the screen, not this sheet, and flag it to fix after the demo.
 
 ---
 
-## Why these three, specifically
+## Why these four, specifically
 
-- **Breast Cancer** — the strongest single moment: extraction with confidence badges, a real ranking, and a gate visibly firing with a citation you can click into.
-- **Heart Failure** — proves the same engine works unmodified on a second condition, and shows the *other* gate type (allergy, not a lab threshold), plus the one amber/medium-confidence field in the set.
-- **Type 2 Diabetes** — the refusal state. This is the answer to "what happens when you don't have enough data" — the engine says so plainly instead of guessing.
-
-## Note on the demo notes themselves
-
-The three notes behind these buttons are placeholders (marked `PLACEHOLDER` in `lib/demoCases.ts`) until the real messy handover-style notes are ready. If they get swapped, the specific numbers and quotes in this cheat sheet (N=9, "56% improved", etc.) will change — rehearse once against whatever's live before using this sheet at the booth.
+- **Breast Cancer** — the insufficient-*cohort* refusal, with a real (if tiny) cohort size shown.
+- **Heart Failure** — proves the same engine works unmodified on a second condition, with a genuinely ambiguous/stale observation value shown as medium confidence rather than green.
+- **Type 2 Diabetes** — a real ranked result carrying two honestly-estimated amber fields, plus the "patient currently on this" flag that keeps the top-ranked drug from reading as an oblivious recommendation.
+- **Sparse case** — the insufficient-*extraction* refusal, structurally distinct from the cohort one, proving the system won't force a case out of nothing.

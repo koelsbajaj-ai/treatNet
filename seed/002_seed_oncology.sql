@@ -38,9 +38,9 @@ insert into patients (id, synthetic_ref, birth_date, sex, created_at) values
   ('7821e985-9210-5694-e3dd-f46ed9faf92f', 'ONC-034', '1960-11-19', 'female', now()),
   ('8fdfcc7c-2ed1-9915-689e-4944b6edb243', 'ONC-035', '1959-12-20', 'male', now()),
   ('e9379a7c-e7da-9bc2-2bc0-ce0c1473c5ba', 'ONC-036', '1964-01-21', 'female', now()),
-  ('d102489c-1d7a-41f2-a9f3-a0cdebecb08d', 'ONC-037', '1953-02-22', 'male', now()),
-  ('4e887b59-4567-2e5d-9f0c-48fbdbfc03b3', 'ONC-038', '1952-03-23', 'female', now()),
-  ('4b4ba722-3d22-fd5d-6a34-a4ff358f7ed1', 'ONC-039', '1951-04-24', 'male', now());
+  ('d102489c-1d7a-41f2-a9f3-a0cdebecb08d', 'ONC-037', '1971-02-22', 'male', now()),
+  ('4e887b59-4567-2e5d-9f0c-48fbdbfc03b3', 'ONC-038', '1970-03-23', 'female', now()),
+  ('4b4ba722-3d22-fd5d-6a34-a4ff358f7ed1', 'ONC-039', '1969-04-24', 'male', now());
 
 insert into conditions (id, patient_id, code_system, code, display, clinical_status, onset_date) values
   ('74b15205-9676-efc2-9b58-17095b0f39e5', '936e01e7-4998-9641-b2eb-5e1c387902d6', 'SNOMED', '254837009', 'Malignant neoplasm of breast', 'active', '2025-07-14'),
