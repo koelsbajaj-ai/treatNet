@@ -257,3 +257,25 @@ export interface ProvenanceRecord {
   observations: ProvenanceObservation[];
   treatments: ProvenanceTreatment[];
 }
+
+// The rule record backing a gated (avoid-list) treatment citation. A gate is
+// a deterministic match against the query case's own allergies/observations,
+// not against historical patient records, so the honest "provenance" for a
+// gate is the rule definition itself rather than a patient.
+export interface RuleProvenance {
+  id: string;
+  treatmentCode: string;
+  ruleType: RuleType;
+  parameterCode: string;
+  operator: ThresholdOperator | null;
+  thresholdValue: number | null;
+  reason: string;
+}
+
+// The full set of synthetic patient refs behind a "Cohort size: N" citation —
+// independently re-derived (see app/api/provenance/route.ts) rather than
+// read off /api/match's response, since ranked[].patientRefs is empty
+// whenever insufficientData is true.
+export interface CohortProvenance {
+  patientRefs: string[];
+}

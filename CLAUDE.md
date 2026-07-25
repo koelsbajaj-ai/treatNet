@@ -268,10 +268,78 @@ as a real design question, not a quick fix.
 confidence-color table per field, a table explaining the two distinct
 refusal paths side by side, and a troubleshooting section.
 
-Next up per PLAN.md: Stage 6 (narrative layer, explicitly cuttable —
-lowest priority), Stage 7 (credibility UI — the persistent banner and
-insufficient-data refusal state are both already built; what's likely
-left is confirming this against PLAN.md's exact wording rather than
-building from scratch), Stage 10 (README + repo hygiene — explicitly
-judged, not cuttable). Ask the user which they want next rather than
-assuming, same as every stage boundary so far.
+**Stage 7 verification pass + 3 UI fixes — complete.** A read-only
+re-read of PLAN.md's Stage 7 requirements found two credibility gaps:
+the confounding disclaimer rendered as small gray caption text (spec
+calls for a persistent banner), and PLAN §7/§8's promised "click a
+citation, see a provenance modal" wasn't wired up for gated (avoid-
+list) treatments or for cohort size — only per-treatment patient chips
+were clickable. User authorized exactly 3 UI-layer fixes, explicitly
+forbidding any change to `lib/matching.ts`, `lib/gates.ts`, the
+extraction schema, or seed data:
+
+- **Gated-treatment citations.** Each avoid-list row now has a "View
+  rule" link opening `ProvenanceModal` in a new `rule` mode. Key
+  finding, surfaced to the user before writing code: a gate has no
+  natural "patient record" behind it (it fires against the query
+  case's own allergies/observations, not historical patients) — the
+  honest citation is the rule definition itself
+  (`treatment_contraindication_rules`, looked up by the `ruleId`
+  `GateExclusion` already carried). Added a `?ruleId=` mode to the
+  *existing* `/api/provenance` route rather than touching `/api/match`.
+  Verified end-to-end live: a synthetic case built to trip the LVEF<50
+  Trastuzumab gate returns the gate in `/api/match`'s `gated[]`, and
+  `/api/provenance?ruleId=...` returns the matching rule detail.
+- **Confounding disclaimer** is now a bordered `zinc` callout box
+  (`border + bg-zinc-50/900`), same wording and position, visually
+  distinct from the amber synthetic-data banner so the two don't
+  compete for attention.
+- **Cohort size is now clickable**, opening `ProvenanceModal` in a new
+  `cohort` mode showing the full patient-ref union, each further
+  clickable into that one patient's record. Key finding, surfaced
+  before writing code: `/api/match`'s `ranked[].patientRefs` is empty
+  whenever `insufficientData` is true (by `lib/matching.ts`'s existing,
+  untouched design) — exactly the Oncology N=3 refusal case, arguably
+  the most important one to have this work on. Fixed without touching
+  `lib/matching.ts` by adding a third query mode to `/api/provenance`
+  (`?conditionCode&severityCode&severityValue&ageBand`) that
+  independently re-derives the cohort's patient list — a deliberate,
+  commented duplication of the condition→severity→age filter steps
+  that already live in `app/api/match/route.ts`, kept separate on
+  purpose so the safety-critical match path and this read-only citation
+  viewer can never silently break each other. Guarded by a one-time
+  manual consistency check (not an automated test) before shipping:
+  live-queried counts from the new endpoint were compared against the
+  on-screen cohort size for all 3 demo cases that reach a match —
+  Oncology 3=3, Heart Failure 26=26, Diabetes 10=10, all exact (the
+  4th demo case, Sparse, never calls `/api/match` at all, so has no
+  cohort to compare). Since all three agreed, cohort size is
+  unconditionally clickable — the planned fallback (clickable only when
+  `ranked.length > 0`) wasn't needed.
+
+`ProvenanceModal` was generalized from a single-purpose
+"fetch one patient by ref" component into one component handling all
+three citation kinds via a `ProvenanceCitation` discriminated union
+(`patient` / `rule` / `cohort`) — reused, not rebuilt, per the user's
+explicit instruction. All three fixes verified live in-browser
+(screenshots + click-through), not just type-checked.
+
+**Stage 10 (README + repo hygiene) — complete.** README.md fully
+replaced (was still the unedited `create-next-app` scaffold): product
+pitch, architecture, the ownership table and confidence-tier/
+confounding sections lifted from PLAN.md §1, a screenshot
+(`docs/screenshot.jpg`), local run instructions, non-goals, and a repo
+hygiene section. Hygiene verified directly, not assumed: `.env.local`
+has never been committed (`git log --all --full-history -- .env.local`
+is empty), a full-history `git log -p` grep for Supabase/Anthropic key
+patterns found nothing beyond the placeholder values in
+`.env.example`, `.gitignore` correctly excludes all `.env*` except
+`.env.example`, and the GitHub repo is confirmed public.
+
+All of Stage 7's fixes plus Stage 10 landed in one commit, per the
+user's explicit instruction to fold them together.
+
+Next up per PLAN.md: Stage 6 (narrative layer) is the only remaining
+unbuilt stage, explicitly the lowest priority and cuttable per PLAN.md
+itself. Everything else in the build order is now complete. Ask the
+user whether they want Stage 6 or consider the build done.

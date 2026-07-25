@@ -2,7 +2,13 @@
 
 import { useState } from "react";
 import type { ConfidenceTier, ExtractedTreatmentHistoryItem, MatchResult } from "@/lib/types";
-import { ProvenanceModal } from "./ProvenanceModal";
+import { ProvenanceModal, type ProvenanceCitation } from "./ProvenanceModal";
+
+function citationKey(citation: ProvenanceCitation): string {
+  if (citation.kind === "patient") return `patient:${citation.ref}`;
+  if (citation.kind === "rule") return `rule:${citation.ruleId}`;
+  return `cohort:${citation.conditionCode}:${citation.severityCode}:${citation.severityValue}:${citation.ageBand}`;
+}
 
 interface ResultsViewProps {
   result: MatchResult;
@@ -48,7 +54,7 @@ function TierBadge({ tier }: { tier: ConfidenceTier }) {
 }
 
 export function ResultsView({ result, treatmentHistory }: ResultsViewProps) {
-  const [selectedRef, setSelectedRef] = useState<string | null>(null);
+  const [selectedCitation, setSelectedCitation] = useState<ProvenanceCitation | null>(null);
 
   return (
     <div className="w-full max-w-2xl">
@@ -56,12 +62,30 @@ export function ResultsView({ result, treatmentHistory }: ResultsViewProps) {
       <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
         Matched on: condition {result.matchedOn.conditionCode}, severity{" "}
         {result.matchedOn.severityCode} = &ldquo;{result.matchedOn.severityValue}&rdquo;, age band{" "}
-        {result.matchedOn.ageBand}. Cohort size: {result.cohortSize}.
+        {result.matchedOn.ageBand}. Cohort size:{" "}
+        <button
+          type="button"
+          onClick={() =>
+            setSelectedCitation({
+              kind: "cohort",
+              conditionCode: result.matchedOn.conditionCode,
+              severityCode: result.matchedOn.severityCode,
+              severityValue: result.matchedOn.severityValue,
+              ageBand: result.matchedOn.ageBand,
+            })
+          }
+          className="font-semibold text-blue-700 underline decoration-dotted hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+        >
+          {result.cohortSize}
+        </button>
+        .
       </p>
-      <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-500">
-        Retrospective association from synthetic records, not a randomized comparison.
-        Treatments were not randomly assigned to patients.
-      </p>
+      <div className="mt-2 rounded-md border border-zinc-300 bg-zinc-50 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900">
+        <p className="text-xs font-medium text-zinc-700 dark:text-zinc-300">
+          Retrospective association from synthetic records, not a randomized comparison.
+          Treatments were not randomly assigned to patients.
+        </p>
+      </div>
 
       {result.insufficientData && (
         <div className="mt-4 rounded-md border-2 border-zinc-400 bg-zinc-100 p-4 dark:border-zinc-600 dark:bg-zinc-800">
@@ -118,7 +142,7 @@ export function ResultsView({ result, treatmentHistory }: ResultsViewProps) {
                       <button
                         key={ref}
                         type="button"
-                        onClick={() => setSelectedRef(ref)}
+                        onClick={() => setSelectedCitation({ kind: "patient", ref })}
                         className="rounded border border-zinc-300 bg-zinc-50 px-1.5 py-0.5 text-xs font-medium text-zinc-700 hover:border-blue-500 hover:bg-blue-50 hover:text-blue-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:border-blue-400 dark:hover:bg-blue-950 dark:hover:text-blue-300"
                       >
                         {ref}
@@ -147,17 +171,31 @@ export function ResultsView({ result, treatmentHistory }: ResultsViewProps) {
                   {row.treatmentDisplay}
                 </span>
                 <p className="mt-1 text-sm text-red-800 dark:text-red-300">{row.reason}</p>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setSelectedCitation({
+                      kind: "rule",
+                      ruleId: row.ruleId,
+                      treatmentDisplay: row.treatmentDisplay,
+                    })
+                  }
+                  className="mt-1 text-xs font-medium text-red-700 underline decoration-dotted hover:text-red-900 dark:text-red-300 dark:hover:text-red-100"
+                >
+                  View rule
+                </button>
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {selectedRef && (
+      {selectedCitation && (
         <ProvenanceModal
-          key={selectedRef}
-          syntheticRef={selectedRef}
-          onClose={() => setSelectedRef(null)}
+          key={citationKey(selectedCitation)}
+          citation={selectedCitation}
+          onClose={() => setSelectedCitation(null)}
+          onSelectPatient={(ref) => setSelectedCitation({ kind: "patient", ref })}
         />
       )}
     </div>
