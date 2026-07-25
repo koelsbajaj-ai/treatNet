@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import type { ConfidenceTier, ExtractedTreatmentHistoryItem, MatchResult } from "@/lib/types";
+import type { ExtractedTreatmentHistoryItem, MatchResult } from "@/lib/types";
+import { TierMeter } from "./ConfidenceMeter";
 import { ProvenanceModal, type ProvenanceCitation } from "./ProvenanceModal";
 
 function citationKey(citation: ProvenanceCitation): string {
@@ -35,20 +36,10 @@ function isAdherenceRelated(note: string): boolean {
   return ADHERENCE_KEYWORDS.some((keyword) => lower.includes(keyword));
 }
 
-function TierBadge({ tier }: { tier: ConfidenceTier }) {
-  const styles: Record<ConfidenceTier, string> = {
-    moderate: "bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300",
-    low: "bg-amber-200 text-amber-900 dark:bg-amber-900 dark:text-amber-100",
-    insufficient: "bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300",
-  };
-  const labels: Record<ConfidenceTier, string> = {
-    moderate: "Moderate confidence",
-    low: "Low confidence",
-    insufficient: "Insufficient data",
-  };
+function RankMarker({ n }: { n: number }) {
   return (
-    <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${styles[tier]}`}>
-      {labels[tier]}
+    <span className="w-7 shrink-0 pt-1 font-mono text-xs tnum text-faint">
+      {String(n).padStart(2, "0")}
     </span>
   );
 }
@@ -57,12 +48,13 @@ export function ResultsView({ result, treatmentHistory }: ResultsViewProps) {
   const [selectedCitation, setSelectedCitation] = useState<ProvenanceCitation | null>(null);
 
   return (
-    <div className="w-full max-w-2xl">
-      <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Results</h2>
-      <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-        Matched on: condition {result.matchedOn.conditionCode}, severity{" "}
-        {result.matchedOn.severityCode} = &ldquo;{result.matchedOn.severityValue}&rdquo;, age band{" "}
-        {result.matchedOn.ageBand}. Cohort size:{" "}
+    <div className="w-full">
+      <h2 className="text-xs font-medium uppercase tracking-[0.14em] text-faint">Results</h2>
+      <p className="mt-2 text-sm text-muted">
+        Matched on condition <span className="font-mono tnum">{result.matchedOn.conditionCode}</span>
+        , severity <span className="font-mono tnum">{result.matchedOn.severityCode}</span> = &ldquo;
+        {result.matchedOn.severityValue}&rdquo;, age band{" "}
+        <span className="font-mono tnum">{result.matchedOn.ageBand}</span>. Cohort size:{" "}
         <button
           type="button"
           onClick={() =>
@@ -74,25 +66,28 @@ export function ResultsView({ result, treatmentHistory }: ResultsViewProps) {
               ageBand: result.matchedOn.ageBand,
             })
           }
-          className="font-semibold text-blue-700 underline decoration-dotted hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+          className="font-mono tnum font-medium text-accent underline decoration-dotted underline-offset-2 transition-colors duration-150 hover:text-accent-hover"
         >
           {result.cohortSize}
         </button>
         .
       </p>
-      <div className="mt-2 rounded-md border border-zinc-300 bg-zinc-50 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900">
-        <p className="text-xs font-medium text-zinc-700 dark:text-zinc-300">
+      <div className="mt-3 border-y border-hairline py-2">
+        <p className="text-xs text-muted">
           Retrospective association from synthetic records, not a randomized comparison.
           Treatments were not randomly assigned to patients.
         </p>
       </div>
 
       {result.insufficientData && (
-        <div className="mt-4 rounded-md border-2 border-zinc-400 bg-zinc-100 p-4 dark:border-zinc-600 dark:bg-zinc-800">
-          <p className="font-semibold text-zinc-900 dark:text-zinc-100">
-            Insufficient data — no recommendation.
+        <div className="mt-8 border-y border-hairline py-10 text-center">
+          <p className="font-mono text-6xl font-medium tracking-tight tnum text-primary">
+            N={result.cohortSize}
           </p>
-          <p className="mt-1 text-sm text-zinc-700 dark:text-zinc-300">
+          <p className="mt-3 text-xs font-medium uppercase tracking-[0.2em] text-faint">
+            Below minimum cohort — no ranking
+          </p>
+          <p className="mx-auto mt-4 max-w-md text-sm text-muted">
             The best-matched treatment in this cohort falls below the minimum sample size (N=5).
             The engine refuses to rank rather than show a confident-looking result it can&apos;t
             back up.
@@ -101,53 +96,61 @@ export function ResultsView({ result, treatmentHistory }: ResultsViewProps) {
       )}
 
       {!result.insufficientData && result.ranked.length > 0 && (
-        <div className="mt-4">
-          <h3 className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">
+        <div className="mt-8">
+          <h3 className="text-xs font-medium uppercase tracking-[0.14em] text-faint">
             Ranked treatments
           </h3>
-          <div className="mt-2 space-y-2">
+          <div className="mt-3 divide-y divide-hairline border-t border-hairline">
             {result.ranked.map((row, rank) => {
               const historyMatch = findHistoryMatch(row.treatmentDisplay, treatmentHistory);
               return (
-                <div
-                  key={row.treatmentCode}
-                  className="rounded-md border border-zinc-200 p-3 dark:border-zinc-800"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-2 font-medium text-zinc-900 dark:text-zinc-100">
-                      #{rank + 1} {row.treatmentDisplay}
-                      {historyMatch && (
-                        <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-800 dark:bg-blue-950 dark:text-blue-300">
-                          Patient currently on this
-                        </span>
-                      )}
-                    </span>
-                    <TierBadge tier={row.confidenceTier} />
-                  </div>
-                  <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-                    N={row.n} · {(row.successRate * 100).toFixed(0)}% improved ({row.successCount}/
-                    {row.n}) · {row.adverseEventCount} adverse event
-                    {row.adverseEventCount === 1 ? "" : "s"}
-                  </p>
-                  {historyMatch && isAdherenceRelated(historyMatch.note) && (
-                    <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-500">
-                      This cohort&apos;s outcomes reflect a range of adherence levels, not drug
-                      efficacy alone — re-trial with adherence support is a legitimate clinical
-                      option.
-                    </p>
-                  )}
-                  <div className="mt-2 flex flex-wrap items-center gap-1">
-                    <span className="text-xs text-zinc-500 dark:text-zinc-500">Patients:</span>
-                    {row.patientRefs.map((ref) => (
-                      <button
-                        key={ref}
-                        type="button"
-                        onClick={() => setSelectedCitation({ kind: "patient", ref })}
-                        className="rounded border border-zinc-300 bg-zinc-50 px-1.5 py-0.5 text-xs font-medium text-zinc-700 hover:border-blue-500 hover:bg-blue-50 hover:text-blue-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:border-blue-400 dark:hover:bg-blue-950 dark:hover:text-blue-300"
-                      >
-                        {ref}
-                      </button>
-                    ))}
+                <div key={row.treatmentCode} className="flex gap-3 py-5">
+                  <RankMarker n={rank + 1} />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-medium text-primary">{row.treatmentDisplay}</span>
+                        {historyMatch && (
+                          <span className="border border-accent px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-accent">
+                            Patient currently on this
+                          </span>
+                        )}
+                      </div>
+                      <span className="font-mono text-3xl font-medium leading-none tracking-tight tnum text-primary">
+                        {(row.successRate * 100).toFixed(0)}
+                        <span className="text-lg text-faint">%</span>
+                      </span>
+                    </div>
+
+                    <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+                      <span className="font-mono text-xs tnum text-muted">
+                        N={row.n} · {row.successCount}/{row.n} improved · {row.adverseEventCount}{" "}
+                        adverse event{row.adverseEventCount === 1 ? "" : "s"}
+                      </span>
+                      <TierMeter tier={row.confidenceTier} />
+                    </div>
+
+                    {historyMatch && isAdherenceRelated(historyMatch.note) && (
+                      <p className="mt-1.5 text-xs text-faint">
+                        This cohort&apos;s outcomes reflect a range of adherence levels, not drug
+                        efficacy alone — re-trial with adherence support is a legitimate clinical
+                        option.
+                      </p>
+                    )}
+
+                    <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+                      <span className="text-xs text-faint">Patients:</span>
+                      {row.patientRefs.map((ref) => (
+                        <button
+                          key={ref}
+                          type="button"
+                          onClick={() => setSelectedCitation({ kind: "patient", ref })}
+                          className="border border-hairline px-1.5 py-0.5 font-mono text-[11px] tnum text-muted transition-colors duration-150 hover:border-accent hover:text-accent"
+                        >
+                          {ref}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
               );
@@ -157,33 +160,33 @@ export function ResultsView({ result, treatmentHistory }: ResultsViewProps) {
       )}
 
       {result.gated.length > 0 && (
-        <div className="mt-4">
-          <h3 className="text-sm font-semibold text-red-700 dark:text-red-400">
-            Avoid — excluded by contraindication gate
+        <div className="mt-8">
+          <h3 className="text-xs font-medium uppercase tracking-[0.14em] text-faint">
+            Excluded — contraindication gate
           </h3>
-          <div className="mt-2 space-y-2">
+          <div className="mt-3 divide-y divide-hairline border-t border-hairline">
             {result.gated.map((row, i) => (
-              <div
-                key={`${row.treatmentCode}-${i}`}
-                className="rounded-md border-2 border-red-400 bg-red-50 p-3 dark:border-red-800 dark:bg-red-950"
-              >
-                <span className="font-medium text-red-900 dark:text-red-200">
-                  {row.treatmentDisplay}
-                </span>
-                <p className="mt-1 text-sm text-red-800 dark:text-red-300">{row.reason}</p>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setSelectedCitation({
-                      kind: "rule",
-                      ruleId: row.ruleId,
-                      treatmentDisplay: row.treatmentDisplay,
-                    })
-                  }
-                  className="mt-1 text-xs font-medium text-red-700 underline decoration-dotted hover:text-red-900 dark:text-red-300 dark:hover:text-red-100"
-                >
-                  View rule
-                </button>
+              <div key={`${row.treatmentCode}-${i}`} className="flex gap-3 py-4">
+                <span className="w-7 shrink-0 pt-0.5 font-mono text-xs text-faint">✕</span>
+                <div className="min-w-0 flex-1">
+                  <span className="font-medium text-muted line-through decoration-faint">
+                    {row.treatmentDisplay}
+                  </span>
+                  <p className="mt-1 text-sm text-muted">{row.reason}</p>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setSelectedCitation({
+                        kind: "rule",
+                        ruleId: row.ruleId,
+                        treatmentDisplay: row.treatmentDisplay,
+                      })
+                    }
+                    className="mt-1 text-xs text-accent underline decoration-dotted underline-offset-2 transition-colors duration-150 hover:text-accent-hover"
+                  >
+                    View rule
+                  </button>
+                </div>
               </div>
             ))}
           </div>

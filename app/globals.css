@@ -1,26 +1,75 @@
 @import "tailwindcss";
 
+/*
+ * Dark is the default surface system, not a media-query afterthought —
+ * a clinical instrument should default to a calm, low-glare surface.
+ * Light mode is the override, built from the same token set so neither
+ * theme can drift out of sync with the other.
+ *
+ * Three-step elevation ramp, same relative ordering in both themes:
+ * app (base) < panel (contains regions) < raised (hover/active/inputs).
+ * Depth comes from this value ramp, never from shadows.
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --app-bg: #0a0a0b;
+  --panel-bg: #17171b;
+  --raised-bg: #222227;
+  --hairline: #2c2c32;
+  --hairline-strong: #3d3d44;
+  --text-primary: #f4f4f5;
+  --text-muted: #9f9fa8;
+  --text-faint: #6b6b73;
+  --accent: #3b82f6;
+  --accent-hover: #60a5fa;
+  --warn: #f5a524;
+  --warn-bg: #241d0d;
+  --danger: #f87171;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
+@media (prefers-color-scheme: light) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --app-bg: #e6e6ea;
+    --panel-bg: #f5f5f7;
+    --raised-bg: #ffffff;
+    --hairline: #d3d3d9;
+    --hairline-strong: #b6b6bd;
+    --text-primary: #18181b;
+    --text-muted: #55555d;
+    --text-faint: #86868e;
+    --accent: #1d4ed8;
+    --accent-hover: #1e40af;
+    --warn: #92400e;
+    --warn-bg: #fef3c7;
+    --danger: #b91c1c;
   }
 }
 
+@theme inline {
+  --color-app: var(--app-bg);
+  --color-panel: var(--panel-bg);
+  --color-raised: var(--raised-bg);
+  --color-hairline: var(--hairline);
+  --color-hairline-strong: var(--hairline-strong);
+  --color-primary: var(--text-primary);
+  --color-muted: var(--text-muted);
+  --color-faint: var(--text-faint);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-warn: var(--warn);
+  --color-warn-bg: var(--warn-bg);
+  --color-danger: var(--danger);
+  --font-sans: var(--font-plex-sans);
+  --font-mono: var(--font-plex-mono);
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--app-bg);
+  color: var(--text-primary);
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+/* Every numeric readout in the app — percentages, cohort sizes, patient
+   IDs, N counts — is font-mono plus this, never proportional figures. */
+.tnum {
+  font-variant-numeric: tabular-nums;
 }

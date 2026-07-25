@@ -1,10 +1,10 @@
-# TreatmentNet — Demo Cheat Sheet
+# TreatNet — Demo Cheat Sheet
 
 One page. Read this before the booth opens, and glance at it between judges if you lose your place. Four demo buttons, one per real note. Never type a note live at the booth.
 
 ## Before the booth opens
 
-1. Open the live URL. You should see: an amber banner across the very top reading **"All data is synthetic and illustrative. Not for clinical use."**, the title **TreatmentNet**, the subtitle **"Evidence surfaced for clinician review, not a prescription."**, and a red **↺ Reset** button in the top-right corner. All four stay visible through every screen, including with the provenance modal open — that's been verified, not assumed.
+1. Open the live URL. You should see: an amber banner across the very top reading **"All data is synthetic and illustrative. Not for clinical use."**, the title **TreatNet**, the subtitle **"Evidence surfaced for clinician review, not a prescription."**, and a red **↺ Reset** button in the top-right corner. All four stay visible through every screen, including with the provenance modal open — that's been verified, not assumed.
 2. Click each of the four demo buttons once, run each all the way to its final screen, and hit Reset after each. This confirms everything is warm before a judge is watching.
 3. Between every judge: click **↺ Reset** (top-right, always visible, works from any screen including with a modal open). That's the only reset you need — it instantly clears back to a blank intake screen.
 

@@ -1,10 +1,10 @@
-# TreatmentNet
+# TreatNet
 
 A clinician-facing tool that surfaces retrospective treatment outcomes for a patient case, deterministically matched and ranked — with hard contraindication gating, confidence tiers driven by real sample size, and every number traceable back to the synthetic records it was computed from.
 
 Built in one hackathon stretch. **All patient data is synthetic and illustrative — this is not a clinical tool, and no output should ever inform real patient care.**
 
-![TreatmentNet results screen](docs/screenshot.jpg)
+![TreatNet results screen](docs/screenshot.jpg)
 
 ## What it does
 

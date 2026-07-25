@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { AppShell } from "@/components/AppShell";
 import { IntakeForm } from "@/components/IntakeForm";
 import { ConfirmationForm } from "@/components/ConfirmationForm";
 import { ResultsView } from "@/components/ResultsView";
 import { InsufficientExtractionView } from "@/components/InsufficientExtractionView";
-import type { DemoCase } from "@/lib/demoCases";
+import { DEMO_CASES, type DemoCase } from "@/lib/demoCases";
 import type { ConfirmedCase, ExtractedCase, MatchResult, SufficientExtraction } from "@/lib/types";
 
 type Stage = "intake" | "confirming" | "insufficientExtraction" | "results";
@@ -49,7 +51,10 @@ function withFallback<T>(promise: Promise<T>, fallback: T | null, timeoutMs: num
   });
 }
 
-export default function Home() {
+function HomeContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
   const [stage, setStage] = useState<Stage>("intake");
   const [noteText, setNoteText] = useState("");
   const [activeDemo, setActiveDemo] = useState<DemoCase | null>(null);
@@ -61,10 +66,28 @@ export default function Home() {
   const [matchResult, setMatchResult] = useState<MatchResult | null>(null);
 
   function handleLoadDemo(demo: DemoCase) {
+    setStage("intake");
     setNoteText(demo.noteText);
     setActiveDemo(demo);
     setErrorMessage(null);
   }
+
+  // The left rail (in AppShell, shared across routes) always links to
+  // "/?demo=<id>" rather than calling handleLoadDemo directly — this is
+  // what makes clicking a demo case from the treatment-landscape page
+  // correctly land back here with that case loaded.
+  useEffect(() => {
+    const demoId = searchParams.get("demo");
+    if (!demoId) return;
+    const demo = DEMO_CASES.find((d) => d.id === demoId);
+    // Genuinely syncing external state (the URL) into the app, not derivable
+    // render-time state — a rail click from another route lands here as a
+    // navigation, and this is what turns that navigation into a loaded case.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (demo) handleLoadDemo(demo);
+    router.replace("/");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   function handleNoteTextChange(text: string) {
     setNoteText(text);
@@ -159,52 +182,38 @@ export default function Home() {
   }
 
   return (
-    <main className="relative flex flex-1 flex-col items-center px-6 py-12">
-      <button
-        type="button"
-        onClick={handleStartOver}
-        className="fixed right-4 top-16 z-[70] rounded-full bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-lg hover:bg-red-700"
-      >
-        ↺ Reset
-      </button>
+    <AppShell onReset={handleStartOver} onSelectDemo={handleLoadDemo} activeDemoId={activeDemo?.id ?? null}>
+      {errorMessage && (
+        <div className="mb-4 border-l-2 border-danger bg-warn-bg/40 px-4 py-2 text-sm text-danger">
+          {errorMessage}
+        </div>
+      )}
 
-      <h1 className="text-4xl font-semibold tracking-tight text-black dark:text-zinc-50">
-        TreatmentNet
-      </h1>
-      <p className="mt-2 text-lg text-zinc-600 dark:text-zinc-400">
-        Evidence surfaced for clinician review, not a prescription.
-      </p>
+      {stage === "intake" && (
+        <IntakeForm
+          noteText={noteText}
+          onNoteTextChange={handleNoteTextChange}
+          onExtract={handleExtract}
+          isExtracting={isExtracting}
+        />
+      )}
+      {stage === "confirming" && extracted && (
+        <ConfirmationForm extracted={extracted} onConfirm={handleConfirm} isMatching={isMatching} />
+      )}
+      {stage === "insufficientExtraction" && insufficientReason && (
+        <InsufficientExtractionView reason={insufficientReason} />
+      )}
+      {stage === "results" && matchResult && (
+        <ResultsView result={matchResult} treatmentHistory={extracted?.treatmentHistory ?? []} />
+      )}
+    </AppShell>
+  );
+}
 
-      <div className="mt-10 flex w-full flex-col items-center">
-        {errorMessage && (
-          <div className="mb-4 w-full max-w-2xl rounded-md border border-red-400 bg-red-50 px-4 py-2 text-sm text-red-800 dark:border-red-800 dark:bg-red-950 dark:text-red-300">
-            {errorMessage}
-          </div>
-        )}
-
-        {stage === "intake" && (
-          <IntakeForm
-            noteText={noteText}
-            onNoteTextChange={handleNoteTextChange}
-            onExtract={handleExtract}
-            onLoadDemo={handleLoadDemo}
-            isExtracting={isExtracting}
-          />
-        )}
-        {stage === "confirming" && extracted && (
-          <ConfirmationForm
-            extracted={extracted}
-            onConfirm={handleConfirm}
-            isMatching={isMatching}
-          />
-        )}
-        {stage === "insufficientExtraction" && insufficientReason && (
-          <InsufficientExtractionView reason={insufficientReason} />
-        )}
-        {stage === "results" && matchResult && (
-          <ResultsView result={matchResult} treatmentHistory={extracted?.treatmentHistory ?? []} />
-        )}
-      </div>
-    </main>
+export default function Home() {
+  return (
+    <Suspense fallback={null}>
+      <HomeContent />
+    </Suspense>
   );
 }

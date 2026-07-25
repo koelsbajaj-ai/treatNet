@@ -279,3 +279,33 @@ export interface RuleProvenance {
 export interface CohortProvenance {
   patientRefs: string[];
 }
+
+// ---- /api/landscape response shape ----
+// A condition-wide comparison, deliberately broader and less rigorous than
+// /api/match: every treatment ever recorded for a condition, with no
+// severity/age stratification. This is an overview surface, not a matched
+// recommendation — /api/match remains the only source of a ranked result
+// for a specific patient case.
+
+export interface LandscapeConditionOption {
+  conditionCode: string;
+  conditionDisplay: string;
+}
+
+export interface LandscapeTreatmentRow {
+  treatmentCode: string;
+  treatmentDisplay: string;
+  n: number;
+  successCount: number;
+  successRate: number;
+  adverseEventCount: number;
+  adverseEventRate: number;
+  /** n < MIN_COHORT_N (lib/matching.ts) — dimmed and excluded from ranking in the UI. */
+  belowThreshold: boolean;
+}
+
+export interface LandscapeResult {
+  conditionCode: string;
+  conditionDisplay: string;
+  treatments: LandscapeTreatmentRow[];
+}

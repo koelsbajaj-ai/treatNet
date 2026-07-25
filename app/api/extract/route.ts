@@ -18,7 +18,7 @@ const MODEL = "claude-sonnet-4-6";
 // seed data only exists for these three domains. Extraction picks from this
 // list rather than inventing codes; anything it can't confidently map gets
 // low confidence rather than a guessed code.
-const SYSTEM_PROMPT = `You extract structured clinical fields from a single free-text clinical note, for a system called TreatmentNet that only has data for three conditions. You are the one place in this product allowed to read unstructured prose — everything downstream is deterministic code that trusts your output completely, so:
+const SYSTEM_PROMPT = `You extract structured clinical fields from a single free-text clinical note, for a system called TreatNet that only has data for three conditions. You are the one place in this product allowed to read unstructured prose — everything downstream is deterministic code that trusts your output completely, so:
 
 - Extract ONLY what the note actually states or very strongly implies. Never invent a value that isn't grounded in the text.
 - Every field gets its own confidence: "high" (explicitly and unambiguously stated), "medium" (stated but with some ambiguity, e.g. an abbreviation or indirect phrasing), or "low" (inferred, uncertain, or only weakly implied).

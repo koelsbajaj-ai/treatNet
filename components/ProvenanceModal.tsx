@@ -76,32 +76,36 @@ export function ProvenanceModal({ citation, onClose, onSelectPatient }: Provenan
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
       onClick={onClose}
     >
       <div
-        className="max-h-[80vh] w-full max-w-md overflow-y-auto rounded-lg bg-white p-5 shadow-xl dark:bg-zinc-900"
+        className="max-h-[80vh] w-full max-w-md overflow-y-auto border border-hairline bg-panel p-5"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-start justify-between">
-          <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">{title}</h3>
+        <div className="flex items-start justify-between gap-4 border-b border-hairline pb-3">
+          <h3 className="text-sm font-medium text-primary">
+            {citation.kind === "patient" ? (
+              <>
+                Synthetic patient <span className="font-mono tnum">{citation.ref}</span>
+              </>
+            ) : (
+              title
+            )}
+          </h3>
           <button
             type="button"
             onClick={onClose}
-            className="text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
+            className="text-muted transition-colors duration-150 hover:text-primary"
             aria-label="Close"
           >
             ✕
           </button>
         </div>
 
-        {isLoading && (
-          <p className="mt-4 text-sm text-zinc-600 dark:text-zinc-400">Loading record...</p>
-        )}
+        {isLoading && <p className="mt-4 text-sm text-faint">Loading record...</p>}
 
-        {errorMessage && (
-          <p className="mt-4 text-sm text-red-700 dark:text-red-400">{errorMessage}</p>
-        )}
+        {errorMessage && <p className="mt-4 text-sm text-muted">{errorMessage}</p>}
 
         {record && citation.kind === "patient" && (
           <PatientDetail record={record as ProvenanceRecord} />
@@ -122,22 +126,26 @@ function PatientDetail({ record }: { record: ProvenanceRecord }) {
   return (
     <div className="mt-4 space-y-4 text-sm">
       <div>
-        <p className="text-zinc-500 dark:text-zinc-500">
-          {record.sex}, born {record.birthDate}
+        <p className="text-faint">
+          {record.sex}, born <span className="font-mono tnum">{record.birthDate}</span>
         </p>
-        <p className="mt-1 font-medium text-zinc-900 dark:text-zinc-100">
+        <p className="mt-1 font-medium text-primary">
           {record.condition.display} ({record.condition.clinicalStatus})
         </p>
       </div>
 
       {record.observations.length > 0 && (
         <div>
-          <h4 className="font-semibold text-zinc-700 dark:text-zinc-300">Observations</h4>
-          <ul className="mt-1 space-y-1 text-zinc-600 dark:text-zinc-400">
+          <h4 className="text-xs font-medium uppercase tracking-[0.08em] text-faint">
+            Observations
+          </h4>
+          <ul className="mt-1.5 space-y-1 text-muted">
             {record.observations.map((obs, i) => (
               <li key={i}>
                 {obs.display}:{" "}
-                {obs.valueText ?? `${obs.valueQuantity ?? "?"}${obs.unit ? ` ${obs.unit}` : ""}`}
+                <span className="font-mono tnum">
+                  {obs.valueText ?? `${obs.valueQuantity ?? "?"}${obs.unit ? ` ${obs.unit}` : ""}`}
+                </span>
               </li>
             ))}
           </ul>
@@ -146,16 +154,26 @@ function PatientDetail({ record }: { record: ProvenanceRecord }) {
 
       {record.treatments.length > 0 && (
         <div>
-          <h4 className="font-semibold text-zinc-700 dark:text-zinc-300">Treatment &amp; outcome</h4>
-          <ul className="mt-1 space-y-2 text-zinc-600 dark:text-zinc-400">
+          <h4 className="text-xs font-medium uppercase tracking-[0.08em] text-faint">
+            Treatment &amp; outcome
+          </h4>
+          <ul className="mt-1.5 space-y-2 text-muted">
             {record.treatments.map((t, i) => (
               <li key={i}>
-                <span className="font-medium text-zinc-800 dark:text-zinc-200">{t.display}</span> —{" "}
-                {t.status} ({t.startDate}
-                {t.endDate ? ` to ${t.endDate}` : ""})
+                <span className="font-medium text-primary">{t.display}</span> —{" "}
+                {t.status} (<span className="font-mono tnum">{t.startDate}</span>
+                {t.endDate ? (
+                  <>
+                    {" "}
+                    to <span className="font-mono tnum">{t.endDate}</span>
+                  </>
+                ) : (
+                  ""
+                )}
+                )
                 {t.outcomeCode && (
                   <p className="mt-0.5">
-                    Outcome: <span className="font-medium">{t.outcomeCode}</span>
+                    Outcome: <span className="font-medium text-primary">{t.outcomeCode}</span>
                     {t.outcomeNotes ? ` — ${t.outcomeNotes}` : ""}
                   </p>
                 )}
@@ -165,9 +183,7 @@ function PatientDetail({ record }: { record: ProvenanceRecord }) {
         </div>
       )}
 
-      <p className="text-xs text-zinc-500 dark:text-zinc-500">
-        This is a synthetic record, not a real patient.
-      </p>
+      <p className="text-xs text-faint">This is a synthetic record, not a real patient.</p>
     </div>
   );
 }
@@ -175,28 +191,38 @@ function PatientDetail({ record }: { record: ProvenanceRecord }) {
 function RuleDetail({ rule }: { rule: RuleProvenance }) {
   return (
     <div className="mt-4 space-y-3 text-sm">
-      <p className="text-zinc-700 dark:text-zinc-300">{rule.reason}</p>
-      <div className="rounded-md border border-zinc-200 p-3 text-zinc-600 dark:border-zinc-800 dark:text-zinc-400">
+      <p className="text-primary">{rule.reason}</p>
+      <div className="border-t border-hairline pt-3 text-muted">
         <p>
-          <span className="font-semibold text-zinc-700 dark:text-zinc-300">Treatment code:</span>{" "}
-          {rule.treatmentCode}
+          <span className="text-xs font-medium uppercase tracking-[0.06em] text-faint">
+            Treatment code
+          </span>{" "}
+          <span className="font-mono tnum">{rule.treatmentCode}</span>
         </p>
-        <p className="mt-1">
-          <span className="font-semibold text-zinc-700 dark:text-zinc-300">Rule type:</span>{" "}
+        <p className="mt-1.5">
+          <span className="text-xs font-medium uppercase tracking-[0.06em] text-faint">
+            Rule type
+          </span>{" "}
           {rule.ruleType === "allergy" ? "documented allergy match" : "observation threshold"}
         </p>
-        <p className="mt-1">
-          <span className="font-semibold text-zinc-700 dark:text-zinc-300">Parameter:</span>{" "}
-          {rule.parameterCode}
+        <p className="mt-1.5">
+          <span className="text-xs font-medium uppercase tracking-[0.06em] text-faint">
+            Parameter
+          </span>{" "}
+          <span className="font-mono tnum">{rule.parameterCode}</span>
         </p>
         {rule.ruleType === "observation_threshold" && (
-          <p className="mt-1">
-            <span className="font-semibold text-zinc-700 dark:text-zinc-300">Fires when:</span>{" "}
-            value {rule.operator} {rule.thresholdValue}
+          <p className="mt-1.5">
+            <span className="text-xs font-medium uppercase tracking-[0.06em] text-faint">
+              Fires when
+            </span>{" "}
+            <span className="font-mono tnum">
+              value {rule.operator} {rule.thresholdValue}
+            </span>
           </p>
         )}
       </div>
-      <p className="text-xs text-zinc-500 dark:text-zinc-500">
+      <p className="text-xs text-faint">
         This gate is evaluated against the current patient&apos;s own confirmed allergies and
         observations — it is not a statistic drawn from historical patient records.
       </p>
@@ -213,8 +239,8 @@ function CohortDetail({
 }) {
   return (
     <div className="mt-4 space-y-3 text-sm">
-      <p className="text-zinc-600 dark:text-zinc-400">
-        {cohort.patientRefs.length} synthetic patient
+      <p className="text-muted">
+        <span className="font-mono tnum">{cohort.patientRefs.length}</span> synthetic patient
         {cohort.patientRefs.length === 1 ? "" : "s"} matched this condition, severity, and age
         band. Click any record to view it.
       </p>
@@ -224,7 +250,7 @@ function CohortDetail({
             key={ref}
             type="button"
             onClick={() => onSelectPatient?.(ref)}
-            className="rounded border border-zinc-300 bg-zinc-50 px-1.5 py-0.5 text-xs font-medium text-zinc-700 hover:border-blue-500 hover:bg-blue-50 hover:text-blue-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:border-blue-400 dark:hover:bg-blue-950 dark:hover:text-blue-300"
+            className="border border-hairline px-1.5 py-0.5 font-mono text-[11px] tnum text-muted transition-colors duration-150 hover:border-accent hover:text-accent"
           >
             {ref}
           </button>
