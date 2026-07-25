@@ -66,14 +66,30 @@ See `PLAN.md` section 1 for the full reasoning behind each rule.
 
 ## Current status
 
-**Stage 1 (Empty app live) — complete except Vercel.** Next.js app
-scaffolded (TypeScript, Tailwind, App Router), folder structure per
-PLAN.md created with placeholder READMEs, `.env.example` and
-`.gitignore` in place, homepage replaced with the smoke-test placeholder
-(title, subtitle, synthetic-data banner). User confirmed the local smoke
-test renders correctly. Repo initialized, committed, and pushed to
-https://github.com/koelsbajaj-ai/treatNet (public). Remaining before
-Stage 1 is fully done: user connects Vercel to this repo and adds
-Supabase env vars in the browser themselves; Stage 1's "DB: connected"
-health check isn't built yet either — that depends on Stage 2's schema
-existing first. Next up: Stage 2 (schema + seed data).
+**Stage 1 (Empty app live) — complete.** Next.js app scaffolded
+(TypeScript, Tailwind, App Router), folder structure per PLAN.md,
+`.env.example` / `.gitignore` in place, homepage is the smoke-test
+placeholder (title, subtitle, synthetic-data banner). Pushed to
+https://github.com/koelsbajaj-ai/treatNet (public). User connected
+Vercel and added `ANTHROPIC_API_KEY` there. Note: Stage 1's "DB:
+connected" health check still isn't built — that's a small addition
+for later, not blocking anything.
+
+**Stage 2 (Schema + seed data) — complete.** Supabase CLI linked to
+the live project (`jbifrxdcmjiprsxjutmk`, the one Vercel's integration
+created — there's a second, unused Supabase project on the account,
+`ecmrhezqjohywdjjeqii`, don't seed data into that one by mistake).
+Migration `supabase/migrations/20260725160005_create_core_schema.sql`
+creates all 7 tables with CHECK constraints on enumerated fields and
+RLS enabled (no policies — locks out the anon key entirely, service-
+role key bypasses it). Seed data for all 3 domains loaded via
+`supabase db query --linked --file seed/<file>.sql`: 116 patients, 116
+conditions, 235 observations, 3 allergies, 116 treatments, 116
+outcomes, 4 contraindication rules (see `seed/README.md` for the
+breakdown). Oncology stage IV is the deliberately tiny cohort (N=3) for
+the insufficient-data demo. Seed SQL was produced by a one-off
+generator script that was intentionally NOT committed (per PLAN.md:
+only the static output is committed, never regenerated live).
+
+Next up: Stage 3 (deterministic matching + gating engine — `lib/types.ts`,
+`lib/matching.ts`, `lib/gates.ts`, `app/api/match`).
