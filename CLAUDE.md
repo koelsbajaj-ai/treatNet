@@ -169,10 +169,27 @@ temporarily hardcoding a test-only stage jump, reverted before
 committing — see git history, not present in shipped code), and once
 after the instant-demo change (confirmed via network tab: demo path
 fires zero `/api/` requests through extraction, manual paste fires a
-real one). Live extraction itself is still unverified — the API key
-had no credits both times; retest once credits land.
+real one). **Live extraction is still unverified** — the API key had no
+credits both times the user tried, including after a top-up that
+hadn't propagated yet (or hit a different workspace than the key
+belongs to — unconfirmed). User is now waiting on credits to land
+overnight. Retest with a real demo note (not the hardcoded-state trick)
+the next time this comes up.
 
-Next up: Stage 5 (results UI polish — ranked table styling, confidence
-tier badges, red avoid flags, clickable citations wired to record IDs).
-Much of this was already built ahead of schedule in Stage 4 because the
-user asked for it directly; Stage 5 is mostly refinement, not a rebuild.
+**Stage 5 (Results UI polish) — complete**, and it also completes
+Stage 8's core function early (user's explicit choice, asked directly
+rather than assumed): `app/api/provenance/route.ts` fetches a real
+patient record (condition, observations, treatment, outcome) by
+`synthetic_ref` from Supabase, and `components/ProvenanceModal.tsx`
+renders it. `ResultsView.tsx`'s patient-ref citations are now clickable
+chips wired to this — verified in-browser clicking two different
+citations and confirming each showed that specific patient's real,
+different data (not stale/shared state), plus backdrop-click-to-close.
+Ranked rows also got numbered (#1, #2...) for readability.
+
+Next up: whatever's next after Stage 5/8 — check PLAN.md's build order
+(Stage 6 narrative layer is explicitly cuttable/lowest-priority; Stage
+7 credibility UI banner is partially already done via the layout
+banner and results-screen disclaimer text; Stage 9 demo hardening and
+Stage 10 README/repo hygiene remain). Ask the user which they want
+next rather than assuming, same as every stage boundary so far.

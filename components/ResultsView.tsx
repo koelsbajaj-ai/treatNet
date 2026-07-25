@@ -1,6 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import type { ConfidenceTier, MatchResult } from "@/lib/types";
+import { ProvenanceModal } from "./ProvenanceModal";
 
 interface ResultsViewProps {
   result: MatchResult;
@@ -26,6 +28,8 @@ function TierBadge({ tier }: { tier: ConfidenceTier }) {
 }
 
 export function ResultsView({ result, onStartOver }: ResultsViewProps) {
+  const [selectedRef, setSelectedRef] = useState<string | null>(null);
+
   return (
     <div className="w-full max-w-2xl">
       <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Results</h2>
@@ -58,14 +62,14 @@ export function ResultsView({ result, onStartOver }: ResultsViewProps) {
             Ranked treatments
           </h3>
           <div className="mt-2 space-y-2">
-            {result.ranked.map((row) => (
+            {result.ranked.map((row, rank) => (
               <div
                 key={row.treatmentCode}
                 className="rounded-md border border-zinc-200 p-3 dark:border-zinc-800"
               >
                 <div className="flex items-center justify-between">
                   <span className="font-medium text-zinc-900 dark:text-zinc-100">
-                    {row.treatmentDisplay}
+                    #{rank + 1} {row.treatmentDisplay}
                   </span>
                   <TierBadge tier={row.confidenceTier} />
                 </div>
@@ -74,9 +78,19 @@ export function ResultsView({ result, onStartOver }: ResultsViewProps) {
                   {row.n}) · {row.adverseEventCount} adverse event
                   {row.adverseEventCount === 1 ? "" : "s"}
                 </p>
-                <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-500">
-                  Patients: {row.patientRefs.join(", ")}
-                </p>
+                <div className="mt-2 flex flex-wrap items-center gap-1">
+                  <span className="text-xs text-zinc-500 dark:text-zinc-500">Patients:</span>
+                  {row.patientRefs.map((ref) => (
+                    <button
+                      key={ref}
+                      type="button"
+                      onClick={() => setSelectedRef(ref)}
+                      className="rounded border border-zinc-300 bg-zinc-50 px-1.5 py-0.5 text-xs font-medium text-zinc-700 hover:border-blue-500 hover:bg-blue-50 hover:text-blue-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:border-blue-400 dark:hover:bg-blue-950 dark:hover:text-blue-300"
+                    >
+                      {ref}
+                    </button>
+                  ))}
+                </div>
               </div>
             ))}
           </div>
@@ -111,6 +125,14 @@ export function ResultsView({ result, onStartOver }: ResultsViewProps) {
       >
         Start over
       </button>
+
+      {selectedRef && (
+        <ProvenanceModal
+          key={selectedRef}
+          syntheticRef={selectedRef}
+          onClose={() => setSelectedRef(null)}
+        />
+      )}
     </div>
   );
 }

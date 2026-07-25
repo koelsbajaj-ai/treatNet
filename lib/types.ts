@@ -206,3 +206,38 @@ export interface MatchResult {
   ranked: RankedTreatment[];
   gated: GateExclusion[];
 }
+
+// ---- Stage 5/8: /api/provenance response — the actual synthetic record
+// backing a citation, so "click a number, see where it came from" is real. ----
+
+export interface ProvenanceObservation {
+  codeSystem: string;
+  code: string;
+  display: string;
+  valueQuantity: number | null;
+  valueText: string | null;
+  unit: string | null;
+}
+
+export interface ProvenanceTreatment {
+  code: string;
+  display: string;
+  status: TreatmentStatus;
+  startDate: string;
+  endDate: string | null;
+  outcomeCode: OutcomeCode | null;
+  outcomeDate: string | null;
+  outcomeNotes: string | null;
+}
+
+export interface ProvenanceRecord {
+  syntheticRef: string;
+  birthDate: string;
+  sex: Sex;
+  condition: {
+    display: string;
+    clinicalStatus: ClinicalStatus;
+  };
+  observations: ProvenanceObservation[];
+  treatments: ProvenanceTreatment[];
+}
