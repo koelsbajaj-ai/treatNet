@@ -187,9 +187,47 @@ citations and confirming each showed that specific patient's real,
 different data (not stale/shared state), plus backdrop-click-to-close.
 Ranked rows also got numbered (#1, #2...) for readability.
 
-Next up: whatever's next after Stage 5/8 — check PLAN.md's build order
-(Stage 6 narrative layer is explicitly cuttable/lowest-priority; Stage
-7 credibility UI banner is partially already done via the layout
-banner and results-screen disclaimer text; Stage 9 demo hardening and
-Stage 10 README/repo hygiene remain). Ask the user which they want
-next rather than assuming, same as every stage boundary so far.
+**Stage 9 (Demo hardening) — complete.** Built for a walk-up booth
+demo run 20+ times on unreliable wifi:
+
+- **Global Reset button** — fixed top-right, `z-[70]` (above the
+  banner's `z-[60]` and the provenance modal's `z-50`), rendered
+  unconditionally on every stage. Replaces the old results-only "Start
+  over" button. Verified clicking it from intake, confirming, results,
+  and — deliberately — with the provenance modal open: it clicks
+  straight through and resets everything in one action.
+- **`withFallback` now catches outright failures, not just slowness.**
+  Previously a real error on `/api/match` would reject and show an
+  error banner even for an active demo case, skipping the cached
+  fallback entirely — a real gap for "venue wifi drops the connection"
+  rather than just "venue wifi is slow." Fixed: any failure (timeout
+  *or* rejected promise) resolves to the cached fallback when one
+  exists. Only reachable when `activeDemo` is set, so a manually typed
+  note's real errors still surface normally.
+- **Banner is now `sticky top-0 z-[60]`** instead of a plain top div.
+  Previously it would scroll out of view on longer screens (the
+  confirmation form, results with the modal open) — verified by
+  scrolling past it and opening the provenance modal; both the banner
+  and the Reset button stayed visible and clickable above the modal's
+  backdrop.
+- **Fallback verified two ways**, both by temporarily editing
+  `app/api/match/route.ts` (reverted before committing — not in
+  shipped code): a hard-coded 5-second delay (confirms the 3-second
+  timeout race), and an unconditional 500 response (confirms the new
+  catch-failures-too fix). All three demo buttons — Breast Cancer,
+  Heart Failure, Type 2 Diabetes — were run through both scenarios and
+  rendered the correct cached result every time, screenshotted at each
+  step.
+- **`DEMO.md`** — one-page cheat sheet at repo root: the exact 90-second
+  click path with what each screen should show (exact numbers, exact
+  gate reasons), a troubleshooting section, and an explicit note that
+  the three demo notes are still placeholders — the cheat sheet's exact
+  numbers will need re-verifying once the real notes land.
+
+Next up per PLAN.md: Stage 6 (narrative layer, explicitly cuttable —
+lowest priority), Stage 7 (credibility UI — the persistent banner and
+insufficient-data refusal state are both already built; what's likely
+left is confirming this against PLAN.md's exact wording rather than
+building from scratch), Stage 10 (README + repo hygiene — explicitly
+judged, not cuttable). Ask the user which they want next rather than
+assuming, same as every stage boundary so far.
