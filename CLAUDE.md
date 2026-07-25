@@ -91,5 +91,41 @@ the insufficient-data demo. Seed SQL was produced by a one-off
 generator script that was intentionally NOT committed (per PLAN.md:
 only the static output is committed, never regenerated live).
 
-Next up: Stage 3 (deterministic matching + gating engine — `lib/types.ts`,
-`lib/matching.ts`, `lib/gates.ts`, `app/api/match`).
+**Stage 3 (Deterministic matching + gating engine) — complete.**
+`lib/types.ts`, `lib/gates.ts`, `lib/matching.ts`, `lib/database.types.ts`
+(generated via `npx supabase gen types typescript --linked`, re-run
+whenever the schema changes), and `app/api/match/route.ts` are all
+written and type-check clean. `lib/supabase.ts` holds the server-only
+Supabase client (service-role key), guarded by `import "server-only"`
+so a build fails outright if anything client-side ever imports it —
+see the "server-only Supabase client" note below for the full
+reasoning. Verified directly (no UI) with 8 requests across all 3
+domains: correct ranking + success rates, both contraindication gate
+types firing (allergy and observation-threshold), the deliberate N=3
+insufficient-data refusal, and one case where a gate exclusion and an
+insufficient-data refusal both fire on the same cohort.
+
+Two bugs found and fixed while testing, worth knowing about:
+1. **Seed data age-band bug.** The original generator spread each
+   cohort's patient ages evenly across a wide range (e.g. 38-72),
+   which meant any single age-banded query only ever matched a handful
+   of patients — the matching engine's age-band stratification
+   fragmented every cohort. Fixed by narrowing each cohort's age range
+   to sit inside one age band with a safety margin. If you ever
+   regenerate seed data, keep each cohort's ages inside a single band.
+2. **`.env.local` had the anon key pasted into `SUPABASE_SERVICE_ROLE_KEY`
+   by mistake** — same value in both fields. Since RLS is enabled with
+   no policies, that made every query from the "admin" client silently
+   return zero rows (Postgres RLS filters rows rather than erroring),
+   which looked identical to an empty database. Caught by decoding the
+   `role` claim inside each JWT (`anon` vs `service_role`) without ever
+   printing the actual key. **Still outstanding:** when the file was
+   corrected, the harness's own file-change tracking surfaced the full
+   `.env.local` contents (including both raw keys) into the
+   conversation despite deliberately routing around that — the user
+   was told and should regenerate both Supabase keys in the dashboard
+   as hygiene once things are stable.
+
+Next up: Stage 4 (free-text case intake — `/api/extract`, confirmation
+form with confidence badges, bare-bones results readout). This is the
+strongest demo moment per PLAN.md and is protected ahead of Stage 6.
