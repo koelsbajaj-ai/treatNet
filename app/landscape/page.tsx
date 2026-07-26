@@ -50,11 +50,11 @@ function LandscapeContent() {
   }, [selectedCode]);
 
   function handleSelectDemo(demo: DemoCase) {
-    router.push(`/?demo=${demo.id}`);
+    router.push(`/case?demo=${demo.id}`);
   }
 
   return (
-    <AppShell onReset={() => router.push("/")} onSelectDemo={handleSelectDemo} isLandscapeActive>
+    <AppShell onReset={() => router.push("/case")} onSelectDemo={handleSelectDemo} isLandscapeActive>
       <h2 className="text-xs font-medium uppercase tracking-[0.14em] text-faint">Analysis</h2>
       <p className="mt-2 text-lg text-primary">Treatment landscape</p>
       <p className="mt-1 text-sm text-muted">
